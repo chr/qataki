@@ -90,9 +90,9 @@ interactive=1
 twitter=http://twitter.com
 identica=http://identi.ca
 
-site=$twitter api=statuses last_file=$conf_dir/last.tweet
+site=$identica api=api/statuses last_file=$conf_dir/last.dent
 
-[[ $1 = i ]] && { site=$identica api=api/$api last_file=$conf_dir/last.dent ; }
+[[ $1 = t ]] && { site=$twitter api=statuses last_file=$conf_dir/last.tweet ; }
 [[ $1 = [it] ]] && shift
 
 # Valid characters for for #hashes, @users, !groups
