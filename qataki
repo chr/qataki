@@ -217,7 +217,7 @@ case $1 in
 	*s)	if [[ "$site" == *tw* ]] ; then
 			site=http://search.twitter.com
 		else
-			site=http://identi.ca/api
+			site=$identica/api
 		fi
 		string=$2
 		data="$site/search.atom"
@@ -226,7 +226,7 @@ case $1 in
 		if [[ "$site" == *tw* ]] ; then
 			site=http://api.twitter.com/1
 		else
-			site=http://identi.ca
+			site=$identica
 		fi
 		# XXX: can't retweet searched notices
 		curl -f -s -n -X POST "$site/$api/retweet/$notice_id.xml" 1>/dev/null
