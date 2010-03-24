@@ -1,0 +1,236 @@
+#!/usr/bin/env bash
+
+# Qataki is free and unencumbered public domain software. For more
+# information see http://unlicense.org/ or the accompanying UNLICENSE file.
+
+usage() {
+case $1 in
+	no_netrc)
+		cat <<-EOH
+	You don't have a .netrc file, needed to authenticate you. You can:
+
+	touch $HOME/.netrc
+	chmod 600 $HOME/.netrc
+	echo machine twitter.com login YOU password PASS >> $HOME/.netrc
+	echo machine api.twitter.com login YOU password PASS >> $HOME/.netrc
+	echo machine identi.ca login YOU password PASS >> $HOME/.netrc
+
+	where YOU and PASS are username and password on twitter/identi.ca
+	For info read "THE .netrc FILE" in "man ftp"
+EOH
+	  exit 1 ;;
+	*)
+		cat <<-EOH
+
+	$(basename $0) [i|t] [METHOD OPTIONS]
+
+	The first (optional) flag can be: i (identi.ca) OR t (twitter; default).
+	It is possible to use only 1 METHOD and relative OPTIONS.
+
+	METHOD  OPTIONS          WHAT
+	  f                      Retrives messages from people you follow.
+	  u     "message"        Updates your status with a "message".
+	  m                      Show notices where you are mentioned (@username).
+	  r     <NUMBER>         Reply to message number <NUMBER>.
+	  s     "string"         Search messages for "a string".
+	  p                      Show previous messages.
+	  RT    <NUMBER>         Retweet message number <NUMBER>.
+	  DM    <USER> "message" Send a DM (with test "message") to <USER>.
+	  d     <NUMBER>         Show some details about notice <NUMBER>.
+
+	<NUMBER> is the tweet/dent number displayed on the left when you run
+	"$(basename $0) [i|t] [f]". <USER> is a user's nickname (no spaces).
+	"message" and "string" are alphanumeric (spaces allowed).
+
+	If you want to use the METHODS u, r, RT, DM, you need authentication,
+	i.e., your username and password must be sent to twitter or identica.
+	Authentication is possible by creating a file named .netrc in \$HOME,
+	giving it user read and write permissions (chmod 600 $HOME/.netrc)
+	and writing in it (YOU is your username, PASS is your password):
+
+	machine twitter.com login YOU password PASS
+	machine api.twitter.com login YOU password PASS
+	machine identi.ca login YOU password PASS
+
+	(For info read "THE .netrc FILE" in "man ftp".)
+EOH
+	exit 1 ;;
+esac
+}
+
+conf_dir=$HOME/.qataki
+
+# XXX: more -R
+
+if which elinks 1>/dev/null ; then
+	render='elinks -dump -force-html'
+else
+	render='lynx -dump -force_html -stdin -display_charset=utf-8'
+fi
+
+# XXX: This in not true for bash...
+[[ -n $PS1 ]] && interactive=1
+# XXX: ... so let's be interactive by default
+interactive=1
+
+twitter=http://twitter.com
+identica=http://identi.ca
+
+site=$twitter api=statuses last_file=$conf_dir/last.tweet
+
+[[ $1 = i ]] && { site=$identica api=api/$api last_file=$conf_dir/last.dent ; }
+[[ $1 = [it] ]] && shift
+
+# Valid characters for for #hashes, @users, !groups
+chars='a-zA-Z0-9_-'
+
+tmp_file=$conf_dir/tmp
+
+# If interactive embed colour sequences
+if [[ "$interactive" -eq 1 ]] ; then
+col_emph='[1;33;40m'
+col_norm='[0;37;40m'
+col_link='[1;36;40m'
+col_at='[1;35;40m'
+col_hash='[1;32;40m'
+col_bang='[1;31;40m'
+fi
+
+[[ ! -d "$conf_dir" ]] && mkdir -p $conf_dir
+[[ ! -f $last_file ]] && > $last_file
+[[ ! -f $tmp_file ]] && > $tmp_file
+
+# When local function's $1 is 'filter', more passages are needed
+fn_download() {
+	{ if [[ "$1" != filter ]] ; then
+		curl -f -s -n "$data" > $tmp_file
+	else
+		curl -f -s -n --data-urlencode "q=$string" "$data" | \
+		  sed '1,/<status>/ { /Search/d ; };
+		  s@<\(/*\)title>@<\1text>@g;s@<\(/*\)entry>@<\1status>@g;
+		  s@<name>\([^< ][^< ]*\).*</name>@<screen_name>\1</screen_name>@' \
+		  > $tmp_file
+	fi ; } || exit 1
+
+	# A file <= 3 lines (always sufficient?) is a file with an error
+	[[ $(wc -l < $tmp_file) -le 3 ]] && exit 2
+}
+
+# First, remove tags with sed and put contents on a line (or more if content has
+# more than one line). Then, search for tags of interest with awk, put them in
+# a variable, and show them in a specific order when a defined tag is reached.
+fn_extract() {
+sed 's@\(>*\)\([^<>]*\)\(<*\)@\1\
+\2\
+\3@g' $tmp_file | sed '/^$/d;/[<>]/d;/\/$/d' | \
+awk ' /^(screen_name)|(text)$/,/^(.screen_name)|(.text)$/ {
+if ( $1 ~ /^screen_name$/ ) { sn=1 ; next }
+if ( $1 ~ /^text$/ ) { txt=1 ; next }
+if ( $1 ~ /^.screen_name$/ ) { sn=0 ; next }
+if ( $1 ~ /^\/text$/ ) { txt=0 ;  next }
+if ( sn == 1 ) { sn_content=sn_content $0 }
+if ( txt == 1 ) { txt_content=txt_content $0 }
+}
+/^.status$/ {
+print "*" sn_content "*: " txt_content ; txt_content=""; sn_content=""
+}'
+}
+
+# Return always an HTML (not XHTML) o list: <ol><li>content1<li>content2</ol>
+# Links are searched in a way that http, ftp and gopher are valid links.
+# Probably only http links should be searched for.
+fn_format() {
+	awk 'BEGIN { print "<ol>" } { print "<li>" $0 } END { print "</ol>" } ' |
+	{ [[ $interactive -eq 1 ]] &&  eval $render || {
+		fmt | nl -s ' ' -w 3 -b p^* ; } ; } |
+	sed "s/^\([^1-9]*[1-9][0-9]*\.[^\*]*\)\*\([^ ][^ ]*\)\*:/\1$col_emph\2$col_norm:/;\
+	     s@\([fgh][a-zA-Z]*://[^ ][^ ]*[a-zA-Z0-9/]\)@$col_link\1$col_norm@g;\
+		 s/\(@[$chars][$chars]*\)/$col_at\1$col_norm/g;\
+		 s/\(#[$chars][$chars]*\)/$col_hash\1$col_norm/g;\
+		 s/\(![$chars][$chars]*\)/$col_bang\1$col_norm/g"
+}
+
+fn_details() {
+answ=$1 # This variable is always the notice (twit/dent) number.
+full_notice=$(xml sel -t -m "/statuses/status[$answ]" \
+ -o "User: " -v user/screen_name -n \
+ -o "Text: " -v text -i "in_reply_to_user_id>0" -n \
+ -o "Reply: $site/" -v in_reply_to_screen_name -o "/" -v in_reply_to_status_id \
+ -b -n -o "Date: " -v created_at $tmp_file)
+
+echo "$full_notice" | grep ^Text | fn_real_urls
+echo "$full_notice" | grep -v ^Text
+}
+
+fn_real_urls() {
+	awk ' BEGIN { ORS=" " }
+	{
+	url_re = "http://[^ ]*"
+	for (i=1; i<=NF; i++) {
+		if (i==NF) { ORS="\n" }
+		x=$i
+		if (match($i, url_re)) {
+			"curl -s -I \""$i"\" | sed -n \"s@Location: \\(.*\\)@\\1@p\"" | \
+			getline x
+			print x
+		} else { print x }
+	} }
+	'
+}
+
+
+[[ $1 = *[furTM] && ! -f $HOME/.netrc ]] && usage no_netrc
+
+case $1 in
+	*f)	[[ -s $last_file ]] && data_par="?count=15&since_id=$(<$last_file)"
+		#data="$site/$api/friends_timeline.xml$data_par"
+		data="$site/$api/home_timeline.xml$data_par"
+		fn_download
+		last=$(xml sel -t -m "/statuses/status[1]" -v id $tmp_file)
+		echo $last > $last_file ;;
+	*u)	curl -s -n --data-urlencode "status=$2" $site/$api/update.xml 1>/dev/null
+		exit 0 ;;
+	*m)	data="$site/$api/mentions.xml"
+		fn_download ;; # XXX: doesn't save "$last"
+	*r)	[[ -z $2 ]] && { echo 'Select a number' && exit 1 ; }
+		[[ $2 = *[!0-9]* ]] && { echo 'Number' && exit 1 ; }
+		reply_to=$(xml sel -t -m "/statuses/status[$2]" -v id $tmp_file)
+		user_name=$(xml sel -t -m "/statuses/status[$2]/user" -v screen_name $tmp_file)
+		[[ -n $3 ]] && msg=$3 || { echo 'Message?' ; exit 1 ; }
+		curl -s -n --data-urlencode "status=@$user_name $msg" \
+		  -d "in_reply_to_status_id=$reply_to" $site/$api/update.xml 1>/dev/null
+		exit 0 ;;
+	*s)	if [[ "$site" == *tw* ]] ; then
+			site=http://search.twitter.com
+		else
+			site=http://identi.ca/api
+		fi
+		string=$2
+		data="$site/search.atom"
+		fn_download filter ;;
+	*RT) notice_id=$(xml sel -t -m "/statuses/status[$2]" -v id $tmp_file)
+		if [[ "$site" == *tw* ]] ; then
+			site=http://api.twitter.com/1
+		else
+			site=http://identi.ca
+		fi
+		# XXX: can't retweet searched notices
+		curl -f -s -n -X POST "$site/$api/retweet/$notice_id.xml" 1>/dev/null
+		exit 0 ;;
+	*DM)	to_user=$2 # XXX: FIX URL
+		[[ $to_user = *[!a-zA-Z0-9]* ]] && { echo 'username is alphanum' ; exit 1 ; }
+		[[ -n $3 ]] && dir_msg=$3 || { echo 'Enter a message' ; exit 1 ; }
+		[[ "$site" == *tw* ]] && unset api
+		curl -n -X POST --data-urlencode "user=$to_user" --data-urlencode "text=$dir_msg" \
+		  "$site/api/direct_messages/new.xml" 1>/dev/null
+		echo "$site/api/direct_messages/new.xml"
+		exit 0 ;;
+	*d)	grep '<verified>' $tmp_file 1>/dev/null || site=$identica # verified -> tw
+		fn_details $2 && exit 0 ;;
+	*h|*H)
+		usage ;;
+	*)	data="$site/$api/public_timeline.xml"
+		[[ "$1" != *p ]] && fn_download ;;
+esac
+
+fn_extract | fn_format | { [[ $interactive -eq 1 ]] && more -R || cat ; }
