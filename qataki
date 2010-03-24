@@ -5,6 +5,9 @@
 
 usage() {
 case $1 in
+	no_exe)
+		echo "$2 is not installed on your system"
+		exit 1 ;;
 	no_netrc)
 		cat <<-EOH
 	You don't have a .netrc file, needed to authenticate you. You can:
@@ -36,7 +39,8 @@ EOH
 	  p                      Show previous messages.
 	  RT    <NUMBER>         Retweet message number <NUMBER>.
 	  DM    <USER> "message" Send a DM (with test "message") to <USER>.
-	  d     <NUMBER>         Show some details about notice <NUMBER>.
+	  d     <NUMBER>         Show details about notice <NUMBER> (note that
+                             shot links will be replaced by real links).
 
 	<NUMBER> is the tweet/dent number displayed on the left when you run
 	"$(basename $0) [i|t] [f]". <USER> is a user's nickname (no spaces).
@@ -57,6 +61,16 @@ EOH
 	exit 1 ;;
 esac
 }
+
+if [[ -x $(which xml) ]]
+then
+	xml=xml
+elif [[ -x $(which xmlstarlet) ]]
+then
+	xml=xmlstarlet
+else
+	usage no_exe "xml/xmlstarlet"
+fi
 
 conf_dir=$HOME/.qataki
 
@@ -152,7 +166,7 @@ fn_format() {
 
 fn_details() {
 answ=$1 # This variable is always the notice (twit/dent) number.
-full_notice=$(xml sel -t -m "/statuses/status[$answ]" \
+full_notice=$($xml sel -t -m "/statuses/status[$answ]" \
  -o "User: " -v user/screen_name -n \
  -o "Text: " -v text -i "in_reply_to_user_id>0" -n \
  -o "Reply: $site/" -v in_reply_to_screen_name -o "/" -v in_reply_to_status_id \
@@ -186,7 +200,7 @@ case $1 in
 		#data="$site/$api/friends_timeline.xml$data_par"
 		data="$site/$api/home_timeline.xml$data_par"
 		fn_download
-		last=$(xml sel -t -m "/statuses/status[1]" -v id $tmp_file)
+		last=$($xml sel -t -m "/statuses/status[1]" -v id $tmp_file)
 		echo $last > $last_file ;;
 	*u)	curl -s -n --data-urlencode "status=$2" $site/$api/update.xml 1>/dev/null
 		exit 0 ;;
@@ -194,8 +208,8 @@ case $1 in
 		fn_download ;; # XXX: doesn't save "$last"
 	*r)	[[ -z $2 ]] && { echo 'Select a number' && exit 1 ; }
 		[[ $2 = *[!0-9]* ]] && { echo 'Number' && exit 1 ; }
-		reply_to=$(xml sel -t -m "/statuses/status[$2]" -v id $tmp_file)
-		user_name=$(xml sel -t -m "/statuses/status[$2]/user" -v screen_name $tmp_file)
+		reply_to=$($xml sel -t -m "/statuses/status[$2]" -v id $tmp_file)
+		user_name=$($xml sel -t -m "/statuses/status[$2]/user" -v screen_name $tmp_file)
 		[[ -n $3 ]] && msg=$3 || { echo 'Message?' ; exit 1 ; }
 		curl -s -n --data-urlencode "status=@$user_name $msg" \
 		  -d "in_reply_to_status_id=$reply_to" $site/$api/update.xml 1>/dev/null
@@ -208,7 +222,7 @@ case $1 in
 		string=$2
 		data="$site/search.atom"
 		fn_download filter ;;
-	*RT) notice_id=$(xml sel -t -m "/statuses/status[$2]" -v id $tmp_file)
+	*RT) notice_id=$($xml sel -t -m "/statuses/status[$2]" -v id $tmp_file)
 		if [[ "$site" == *tw* ]] ; then
 			site=http://api.twitter.com/1
 		else

@@ -9,7 +9,8 @@ It's a shell script that, besides usual UNIX utilities
 It does its job (read/post notices from the command line)
 in a simple manner. No fancy features.
 
-It has been tested with bash (used by default) and ksh93.
+It has been tested with bash (used by default) and ksh93,
+on NetBSD.
 
 This is how it looks like:
 http://chr.tx0.org/qataki/qataki.png
