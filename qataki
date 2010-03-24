@@ -40,7 +40,7 @@ EOH
 	  RT    <NUMBER>         Retweet message number <NUMBER>.
 	  DM    <USER> "message" Send a DM (with test "message") to <USER>.
 	  d     <NUMBER>         Show details about notice <NUMBER> (note that
-                             shot links will be replaced by real links).
+                             short links will be replaced by real links).
 
 	<NUMBER> is the tweet/dent number displayed on the left when you run
 	"$(basename $0) [i|t] [f]". <USER> is a user's nickname (no spaces).
