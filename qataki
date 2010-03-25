@@ -134,9 +134,11 @@ fn_download() {
 # more than one line). Then, search for tags of interest with awk, put them in
 # a variable, and show them in a specific order when a defined tag is reached.
 fn_extract() {
-sed 's@\(>*\)\([^<>]*\)\(<*\)@\1\
+sed '/<retweeted_status>/,/<\/retweeted_status>/ !{
+s@\(>*\)\([^<>]*\)\(<*\)@\1\
 \2\
-\3@g' $tmp_file | sed '/^$/d;/[<>]/d;/\/$/d' | \
+\3@g
+}' $tmp_file | sed '/^$/d;/[<>]/d;/\/$/d' | \
 awk ' /^(screen_name)|(text)$/,/^(\/screen_name)|(\/text)$/ {
 if ( $1 ~ /^screen_name$/ ) { sn=1 ; next }
 if ( $1 ~ /^text$/ ) { txt=1 ; next }
