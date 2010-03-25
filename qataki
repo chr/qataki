@@ -3,10 +3,24 @@
 # Qataki is free and unencumbered public domain software. For more
 # information see http://unlicense.org/ or the accompanying UNLICENSE file.
 
+qataki_url="&lt;a href='http://chr.tx0.org/qataki' alt='Qataki' title='Qataki'&gt;qataki&lt;/a&gt;"
+
 usage() {
 case $1 in
+	empty)
+		echo "Forgot an option?"
+		exit 1 ;;
+	no_alias)
+		echo "Alias is not configured in $conf_file"
+		exit 1 ;;
+	no_both)
+		echo "Can't have both"
+		exit 1 ;;
 	no_exe)
 		echo "$2 is not installed on your system"
+		exit 1 ;;
+	no_auth)
+		echo "Have you set up $HOME/.netrc correctly?"
 		exit 1 ;;
 	no_netrc)
 		cat <<-EOH
@@ -36,16 +50,28 @@ EOH
 	  u     "message"        Updates your status with a "message".
 	  m                      Show notices where you are mentioned (@username).
 	  r     <NUMBER>         Reply to message number <NUMBER>.
-	  s     "string"         Search messages for "a string".
 	  p                      Show previous messages.
-	  RT    <NUMBER>         Retweet message number <NUMBER>.
-	  DM    <USER> "message" Send a DM (with test "message") to <USER>.
 	  d     <NUMBER>         Show details about notice <NUMBER> (note that
 	                         short links will be replaced by real links).
+	  s     <SITE> <METHOD>  Use <METHOD> (exept s itself) on <SITE>.
+	  S     "string"         Search messages for "a string".
+	  RT    <NUMBER>         Retweet message number <NUMBER>.
+	  DM    <USER> "message" Send a DM (with test "message") to <USER>.
 
-	<NUMBER> is the tweet/dent number displayed on the left when you run
-	"$(basename $0) [i|t] [f]". <USER> is a user's nickname (no spaces).
-	"message" and "string" are alphanumeric (spaces allowed).
+	NOTES:
+
+	<NUMBER>  is the tweet/dent number displayed on the left when you run
+	          "$(basename $0) [i|t] [f]".
+	<USER>    is a user's nickname (no spaces).
+	          "message" and "string" are alphanumeric (spaces allowed).
+	<SITE>    is an alias for a StatusNet compatible site. This alias is
+	          the second field of a line on $conf_file structured like:
+	          site ALIAS http://micro.example.com
+	          You'll be able to use ALIAS as option for 's' METHOD, like:
+	          "$(basename $0) s ALIAS f".
+	          (with the latter example you'll see notices from people you
+	          follow on http://micro.example.com).
+
 
 	If you want to use the METHODS u, r, RT, DM, you need authentication,
 	i.e., your username and password must be sent to twitter or identica.
@@ -74,6 +100,7 @@ else
 fi
 
 conf_dir=$HOME/.qataki
+conf_file=$conf_dir/qataki.conf
 
 # XXX: more -R
 
@@ -95,6 +122,21 @@ site=$identica api=api/statuses last_file=$conf_dir/last.dent
 
 [[ $1 = t ]] && { site=$twitter api=statuses last_file=$conf_dir/last.tweet ; }
 [[ $1 = [it] ]] && shift
+
+if [[ $1 = *s ]] ; then
+	[[ $site = 'http://twitter.com' ]] && usage no_both
+	if [[ -z $2 ]] ; then
+		usage empty
+	else
+		[[ ! $(grep "$2" $conf_file) ]] && usage no_alias
+	fi
+	site=$(awk '/^site(\t| )+'$2'/ {print $3}' $conf_file)
+	last_file=$conf_dir/last.$2
+	shift && shift
+fi
+
+# XXX: Be sure to leave out trailang slash
+site=$(echo $site | sed 's@\(.*\)/$@\1@')
 
 # Valid characters for for #hashes, @users, !groups
 chars='a-zA-Z0-9_-'
@@ -196,7 +238,12 @@ fn_real_urls() {
 }
 
 
-[[ $1 = *[furTM] && ! -f $HOME/.netrc ]] && usage no_netrc
+if [[ $1 = *[fursTM] ]] ; then
+	[[ ! -f $HOME/.netrc ]] && usage no_netrc
+	# Check that site (without http[s]://) is in .netrc
+	site_check=$(echo "$site" | sed 's@http[s]*://@@')
+	[[ ! $(grep "$site_check" $HOME/.netrc) ]] && usage no_auth
+fi
 
 case $1 in
 	*f)	[[ -s $last_file ]] && data_par="?count=15&since_id=$(<$last_file)"
@@ -217,7 +264,7 @@ case $1 in
 		curl -s -n --data-urlencode "status=@$user_name $msg" \
 		  -d "in_reply_to_status_id=$reply_to" $site/$api/update.xml 1>/dev/null
 		exit 0 ;;
-	*s)	if [[ "$site" == *tw* ]] ; then
+	*S)	if [[ "$site" == *tw* ]] ; then
 			site=http://search.twitter.com
 		else
 			site=$identica/api
