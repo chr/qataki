@@ -250,4 +250,4 @@ case $1 in
 		[[ "$1" != *p ]] && fn_download ;;
 esac
 
-fn_extract | fn_format | { [[ $interactive -eq 1 ]] && more -R || cat ; }
+fn_extract | fn_format | { [[ $interactive -eq 1 ]] && less -X -R || cat ; }
