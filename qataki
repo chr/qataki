@@ -137,15 +137,15 @@ fn_extract() {
 sed 's@\(>*\)\([^<>]*\)\(<*\)@\1\
 \2\
 \3@g' $tmp_file | sed '/^$/d;/[<>]/d;/\/$/d' | \
-awk ' /^(screen_name)|(text)$/,/^(.screen_name)|(.text)$/ {
+awk ' /^(screen_name)|(text)$/,/^(\/screen_name)|(\/text)$/ {
 if ( $1 ~ /^screen_name$/ ) { sn=1 ; next }
 if ( $1 ~ /^text$/ ) { txt=1 ; next }
-if ( $1 ~ /^.screen_name$/ ) { sn=0 ; next }
+if ( $1 ~ /^\/screen_name$/ ) { sn=0 ; next }
 if ( $1 ~ /^\/text$/ ) { txt=0 ;  next }
 if ( sn == 1 ) { sn_content=sn_content $0 }
 if ( txt == 1 ) { txt_content=txt_content $0 }
 }
-/^.status$/ {
+/^\/status$/ {
 print "*" sn_content "*: " txt_content ; txt_content=""; sn_content=""
 }'
 }
