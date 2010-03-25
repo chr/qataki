@@ -27,10 +27,11 @@ EOH
 
 	$(basename $0) [i|t] [METHOD OPTIONS]
 
-	The first (optional) flag can be: i (identi.ca) OR t (twitter; default).
-	It is possible to use only 1 METHOD and relative OPTIONS.
+	The first (optional) flag can be: i (identi.ca) OR t (twitter). If
+	none of of these two flags are given, then Identi.ca will be used.
+	It is possible to use only 1 METHOD and, eventually, its OPTION.
 
-	METHOD  OPTIONS          WHAT
+	METHOD  OPTION           WHAT
 	  f                      Retrives messages from people you follow.
 	  u     "message"        Updates your status with a "message".
 	  m                      Show notices where you are mentioned (@username).
@@ -40,7 +41,7 @@ EOH
 	  RT    <NUMBER>         Retweet message number <NUMBER>.
 	  DM    <USER> "message" Send a DM (with test "message") to <USER>.
 	  d     <NUMBER>         Show details about notice <NUMBER> (note that
-                             short links will be replaced by real links).
+	                         short links will be replaced by real links).
 
 	<NUMBER> is the tweet/dent number displayed on the left when you run
 	"$(basename $0) [i|t] [f]". <USER> is a user's nickname (no spaces).
