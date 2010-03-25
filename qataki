@@ -102,6 +102,8 @@ fi
 conf_dir=$HOME/.qataki
 conf_file=$conf_dir/qataki.conf
 
+[[ ! -f $conf_file ]] && touch $conf_file
+
 # XXX: more -R
 
 if which elinks 1>/dev/null ; then
