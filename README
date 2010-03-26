@@ -67,7 +67,8 @@ dependency. If Elinks is not installed on your system,
 Lynx will be used. In this latter case, you'll have
 problems with accented letters and non-latin alphabet.
 
-[3] http://xmlstar.sourceforge.net/ . Actually, I'll
+[3] http://xmlstar.sourceforge.net/ . (The binary is called
+"xml" or "xmlstar" on different systems.) Actually, I'll
 remove this dependency, as there's no really much need
 for it. However, as I'm lazy and have xmlstarlet available,
 it's not a priority.
