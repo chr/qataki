@@ -254,7 +254,7 @@ case $1 in
 		fn_download
 		last=$($xml sel -t -m "/statuses/status[1]" -v id $tmp_file)
 		echo $last > $last_file ;;
-	*u)	curl -s -n --data-urlencode "status=$2" $site/$api/update.xml 1>/dev/null
+	*u)	curl -s -n -d "source=qataki" --data-urlencode "status=$2" $site/$api/update.xml 1>/dev/null
 		exit 0 ;;
 	*m)	data="$site/$api/mentions.xml"
 		fn_download ;; # XXX: doesn't save "$last"
@@ -263,7 +263,7 @@ case $1 in
 		reply_to=$($xml sel -t -m "/statuses/status[$2]" -v id $tmp_file)
 		user_name=$($xml sel -t -m "/statuses/status[$2]/user" -v screen_name $tmp_file)
 		[[ -n $3 ]] && msg=$3 || { echo 'Message?' ; exit 1 ; }
-		curl -s -n --data-urlencode "status=@$user_name $msg" \
+		curl -s -n -d "source=qataki" --data-urlencode "status=@$user_name $msg" \
 		  -d "in_reply_to_status_id=$reply_to" $site/$api/update.xml 1>/dev/null
 		exit 0 ;;
 	*S)	if [[ "$site" == *tw* ]] ; then
@@ -281,13 +281,13 @@ case $1 in
 			site=$identica
 		fi
 		# XXX: can't retweet searched notices
-		curl -f -s -n -X POST "$site/$api/retweet/$notice_id.xml" 1>/dev/null
+		curl -f -s -n -X POST -d "source=qataki" "$site/$api/retweet/$notice_id.xml" 1>/dev/null
 		exit 0 ;;
 	*DM)	to_user=$2 # XXX: FIX URL
 		[[ $to_user = *[!a-zA-Z0-9]* ]] && { echo 'username is alphanum' ; exit 1 ; }
 		[[ -n $3 ]] && dir_msg=$3 || { echo 'Enter a message' ; exit 1 ; }
 		[[ "$site" == *tw* ]] && unset api
-		curl -n -X POST --data-urlencode "user=$to_user" --data-urlencode "text=$dir_msg" \
+		curl -n -X POST -d "source=qataki" --data-urlencode "user=$to_user" --data-urlencode "text=$dir_msg" \
 		  "$site/api/direct_messages/new.xml" 1>/dev/null
 		echo "$site/api/direct_messages/new.xml"
 		exit 0 ;;
