@@ -1,24 +1,76 @@
 QATAKI
 ======
 
-Qataki is a CLI Identi.ca/Twitter client.
+Qataki is a CLI Identi.ca/StatusNet/Twitter client.
 
-It's a shell script that, besides usual UNIX utilities
-(like sed/awk/grep), depends on xmlstarlet.[1]
+It's a shell script that you can use to read/post notices
+from the command line in a simple manner.  Besides that,
+with qataki you can: reply to posts; retweet notices;
+search for notices.  As you can see there are not fancy
+features.  However, if you feel that something useful
+lacks, contact me (@chr identica) or play yourself with
+the code!
 
-It does its job (read/post notices from the command line)
-in a simple manner. No fancy features.
+By default Identi.ca and Twitter support is enabled. You
+can use a StatusNet site by creating an alias in a
+configuration file. More info here:
+http://chr.tx0.org/qataki/#StatusNet
 
 It has been tested with bash (used by default) and ksh93,
-on NetBSD.
+on NetBSD and Debian.
 
 This is how it looks like:
 http://chr.tx0.org/images/qataki.png
 
 
-[1] http://xmlstar.sourceforge.net/ . Actually, I'll
+DEPENDENCIES
+------------
+
+You'll need usual UNIX utilities like sed/awk/grep.
+You'll also need curl,[1] elinks,[2] and xmlstarlet.[3]
+
+
+INSTALLATION
+------------
+
+1) Download:
+
+$ wget http://github.com/chr/qataki/blob/master/qataki
+
+2) Make it executable:
+
+$ chmod +x qataki
+
+3) Use it:
+
+$ ./qataki
+
+(you can place it somewhere in your $PATH so you can run
+it directly as "qataki", without the leading dot-slash).
+
+For authentication, a .netrc file is used. This file
+(located at $HOME/.netrc) has this syntax:
+
+machine identi.ca login YOU password SECRET
+
+Where YOU is your username on identi.ca and SECRET is your
+password there.
+
+Read "qataki -h for help.
+
+
+
+[1] http://curl.haxx.se/
+
+[2] http://elinks.or.cz/ . This is not, however a "hard"
+dependency. If Elinks is not installed on your system,
+Lynx will be used. In this latter case, you'll have
+problems with accented letters and non-latin alphabet.
+
+[3] http://xmlstar.sourceforge.net/ . Actually, I'll
 remove this dependency, as there's no really much need
 for it. However, as I'm lazy and have xmlstarlet available,
 it's not a priority.
+
 
 P.S.: Consider the script "alpha".
