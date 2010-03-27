@@ -50,6 +50,7 @@ EOH
 	  u     "message"        Updates your status with a "message".
 	  m                      Show notices where you are mentioned (@username).
 	  r     <NUMBER>         Reply to message number <NUMBER>.
+	  n     <USER>           Show <USER>'s timeline (last statuses).
 	  p                      Show previous messages.
 	  d     <NUMBER>         Show details about notice <NUMBER> (note that
 	                         short links will be replaced by real links).
@@ -62,7 +63,7 @@ EOH
 
 	<NUMBER>  is the tweet/dent number displayed on the left when you run
 	          "$(basename $0) [i|t] [f]".
-	<USER>    is a user's nickname (no spaces).
+	<USER>    is a user's nickname (AKA screen_name; no spaces).
 	          "message" and "string" are alphanumeric (spaces allowed).
 	<SITE>    is an alias for a StatusNet compatible site. This alias is
 	          the second field of a line on $conf_file structured like:
