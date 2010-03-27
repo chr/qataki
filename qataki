@@ -149,7 +149,7 @@ tmp_file=$conf_dir/tmp
 # If interactive embed colour sequences
 if [[ "$interactive" -eq 1 ]] ; then
 col_emph='[1;33;40m'
-col_norm='[0;37;40m'
+col_norm='[0m'
 col_link='[1;36;40m'
 col_at='[1;35;40m'
 col_hash='[1;32;40m'
