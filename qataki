@@ -305,11 +305,12 @@ case $1 in
 		fn_download filter ;;
 	*c) [[ "$site" == *tw* ]] && usage no_impl
 		# Restrive conversation URL from status id
-		context_id=$($xml sel -t -m "/statuses/status[$2]" -v in_reply_to_status_id $tmp_file)
-		conversation_url=$(curl -s $site/notice/$context_id | \
-		  sed -n "\@$site/conversation@ { s/[^\"]*\"\([^#]*\).*/\1/ p
-		  }")
-		  # Format conversation
+		context_id=$($xml sel -t -m "/statuses/status[$2]" \
+		  -v in_reply_to_status_id $tmp_file)
+		conversation_url=$(curl -L -s $site/notice/$context_id | \
+		  sed -n "/>in context</ { s/[^\"]*\"\([^#]*\).*/\1/ p
+		    }")
+		# Format conversation
 		fn_conversation "$conversation_url" | fn_format | \
 		sed '/^$/d' | { [[ $interactive -eq 1 ]] && less $opt_pager || cat ; } && exit 0 ;;
 	*RT) notice_id=$($xml sel -t -m "/statuses/status[$2]" -v id $tmp_file)
