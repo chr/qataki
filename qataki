@@ -36,6 +36,9 @@ case $1 in
 	For info read "THE .netrc FILE" in "man ftp"
 EOH
 	  exit 1 ;;
+	no_impl)
+		echo "Not implemented"
+		exit 1 ;;
 	*)
 		cat <<-EOH
 
@@ -90,16 +93,6 @@ EOH
 esac
 }
 
-if [[ -x $(which xml) ]]
-then
-	xml=xml
-elif [[ -x $(which xmlstarlet) ]]
-then
-	xml=xmlstarlet
-else
-	usage no_exe "xml/xmlstarlet"
-fi
-
 conf_dir=$HOME/.qataki
 conf_file=$conf_dir/qataki.conf
 
@@ -108,7 +101,7 @@ conf_file=$conf_dir/qataki.conf
 # XXX: more -R
 
 if which elinks 1>/dev/null ; then
-	render='elinks -dump -force-html'
+	render='elinks -dump -force-html -no-numbering -no-references'
 else
 	render='lynx -dump -force_html -stdin -display_charset=utf-8'
 fi
@@ -185,26 +178,40 @@ s@\(>*\)\([^<>]*\)\(<*\)@\1\
 \2\
 \3@g
 }' $tmp_file | sed '/^$/d;/[<>]/d;/\/$/d' | \
-awk ' /^(screen_name)|(text)$/,/^(\/screen_name)|(\/text)$/ {
+awk ' /^(screen_name)|(text)|(in_reply_to_screen_name)$/,/^(\/screen_name)|(\/text)|(\/in_reply_to_screen_name)$/ {
 if ( $1 ~ /^screen_name$/ ) { sn=1 ; next }
 if ( $1 ~ /^text$/ ) { txt=1 ; next }
+if ( $1 ~ /^in_reply_to_screen_name$/ ) { rep=1 ; next }
 if ( $1 ~ /^\/screen_name$/ ) { sn=0 ; next }
 if ( $1 ~ /^\/text$/ ) { txt=0 ;  next }
+if ( $1 ~ /^\/in_reply_to_screen_name$/ ) { rep=0; next }
 if ( sn == 1 ) { sn_content=sn_content $0 }
 if ( txt == 1 ) { txt_content=txt_content $0 }
+if ( rep == 1 ) { rep_content=rep_content $0 }
 }
 /^\/status$/ {
-print "*" sn_content "*: " txt_content ; txt_content=""; sn_content=""
+if (rep_content) { txt_content=txt_content " {context}" }
+print "*" sn_content "*: " txt_content
+txt_content=""; sn_content=""; rep_content=""
 }'
 }
 
-# Return always an HTML (not XHTML) o list: <ol><li>content1<li>content2</ol>
+fn_context() {
+	curl -s "$1" | \
+	  sed -n '/<div id="content">/,/<div id="aside_primary"/ p' | \
+	  sed '/<img src=/d;s/<p class=/<span class=/;s@</p>@</span>@;
+	    s@\(<span class="nickname fn">\)\(.*\)\(</span>\)@\1*\2*: \3@'
+}
+
+# Return an ordered list for notices: # <ol><li>Notice 1<li>Notice 2..</ol>
+fn_ol_list() {
+	awk 'BEGIN { print "<ol>" } { print "<li>" $0 } END { print "</ol>" } '
+}
+
 # Links are searched in a way that http, ftp and gopher are valid links.
-# Probably only http links should be searched for.
 fn_format() {
-	awk 'BEGIN { print "<ol>" } { print "<li>" $0 } END { print "</ol>" } ' |
 	{ [[ $interactive -eq 1 ]] &&  eval $render || {
-		fmt | nl -s ' ' -w 3 -b p^* ; } ; } |
+		fmt | nl -s ' ' -w 3 -b p^* ; } ; } | \
 	sed "s/^\([^1-9]*[1-9][0-9]*\.[^\*]*\)\*\([^ ][^ ]*\)\*:/\1$col_emph\2$col_norm:/;\
 	     s@\([fgh][a-zA-Z]*://[^ ][^ ]*[a-zA-Z0-9/]\)@$col_link\1$col_norm@g;\
 		 s/\(@[$chars][$chars]*\)/$col_at\1$col_norm/g;\
@@ -224,6 +231,8 @@ echo "$full_notice" | grep ^Text | fn_real_urls
 echo "$full_notice" | grep -v ^Text
 }
 
+# This will output HTTP header field "Location".
+# So, give this function a short URL, and will ourput real URL.
 fn_real_urls() {
 	awk ' BEGIN { ORS=" " }
 	{
@@ -241,13 +250,25 @@ fn_real_urls() {
 }
 
 
-if [[ $1 = *[fursTM] ]] ; then
+# Options that need authentication
+if [[ $1 = *[fursD] ]] ; then
 	[[ ! -f $HOME/.netrc ]] && usage no_netrc
 	# Check that site (without http[s]://) is in .netrc
 	site_check=$(echo "$site" | sed 's@http[s]*://@@')
 	[[ ! $(grep "$site_check" $HOME/.netrc) ]] && usage no_auth
 fi
 
+# For options that need xmlstarlet
+if [[ $1 = *[frcdR] && -x $(which xml) ]] ; then
+	xml=xml
+elif [[ -x $(which xmlstarlet) ]] ; then
+	xml=xmlstarlet
+else
+	usage no_exe "xml/xmlstarlet"
+fi
+
+
+# XXX: 1) Rewrite opriotns parsing. 2) Make $site/$api etc. better.
 case $1 in
 	*f)	[[ -s $last_file ]] && data_par="?count=15&since_id=$(<$last_file)"
 		#data="$site/$api/friends_timeline.xml$data_par"
@@ -255,7 +276,7 @@ case $1 in
 		fn_download
 		last=$($xml sel -t -m "/statuses/status[1]" -v id $tmp_file)
 		echo $last > $last_file ;;
-	*u)	curl -s -n -d "source=qataki" --data-urlencode "status=$2" $site/$api/update.xml 1>/dev/null
+	*u)	curl -s -n -d "source=Qataki" --data-urlencode "status=$2" $site/$api/update.xml 1>/dev/null
 		exit 0 ;;
 	*m)	data="$site/$api/mentions.xml"
 		fn_download ;; # XXX: doesn't save "$last"
@@ -264,7 +285,7 @@ case $1 in
 		reply_to=$($xml sel -t -m "/statuses/status[$2]" -v id $tmp_file)
 		user_name=$($xml sel -t -m "/statuses/status[$2]/user" -v screen_name $tmp_file)
 		[[ -n $3 ]] && msg=$3 || { echo 'Message?' ; exit 1 ; }
-		curl -s -n -d "source=qataki" --data-urlencode "status=@$user_name $msg" \
+		curl -s -n -d "source=Qataki" --data-urlencode "status=@$user_name $msg" \
 		  -d "in_reply_to_status_id=$reply_to" $site/$api/update.xml 1>/dev/null
 		exit 0 ;;
 	*n) [[ "$site" == *tw* ]] && site=http://api.twitter.com/1
@@ -279,6 +300,13 @@ case $1 in
 		string=$2
 		data="$site/search.atom"
 		fn_download filter ;;
+	*c) [[ "$site" == *tw* ]] && usage no_impl
+		context_id=$($xml sel -t -m "/statuses/status[$2]" -v in_reply_to_status_id $tmp_file)
+		conversation_url=$(curl -s $site/notice/$context_id | \
+		  sed -n "\@$site/conversation@ { s/[^\"]*\"\([^#]*\).*/\1/ p
+		  }")
+		fn_context "$conversation_url" | fn_format | \
+		sed '/^$/d' | { [[ $interactive -eq 1 ]] && less -X -R || cat ; } && exit 0 ;;
 	*RT) notice_id=$($xml sel -t -m "/statuses/status[$2]" -v id $tmp_file)
 		if [[ "$site" == *tw* ]] ; then
 			site=http://api.twitter.com/1
@@ -286,13 +314,13 @@ case $1 in
 			site=$identica
 		fi
 		# XXX: can't retweet searched notices
-		curl -f -s -n -X POST -d "source=qataki" "$site/$api/retweet/$notice_id.xml" 1>/dev/null
+		curl -f -s -n -X POST -d "source=Qataki" "$site/$api/retweet/$notice_id.xml" 1>/dev/null
 		exit 0 ;;
 	*DM)	to_user=$2 # XXX: FIX URL
 		[[ $to_user = *[!a-zA-Z0-9]* ]] && { echo 'username is alphanum' ; exit 1 ; }
 		[[ -n $3 ]] && dir_msg=$3 || { echo 'Enter a message' ; exit 1 ; }
 		[[ "$site" == *tw* ]] && unset api
-		curl -n -X POST -d "source=qataki" --data-urlencode "user=$to_user" --data-urlencode "text=$dir_msg" \
+		curl -n -X POST -d "source=Qataki" --data-urlencode "user=$to_user" --data-urlencode "text=$dir_msg" \
 		  "$site/api/direct_messages/new.xml" 1>/dev/null
 		echo "$site/api/direct_messages/new.xml"
 		exit 0 ;;
@@ -304,4 +332,4 @@ case $1 in
 		[[ "$1" != *p ]] && fn_download ;;
 esac
 
-fn_extract | fn_format | { [[ $interactive -eq 1 ]] && less -X -R || cat ; }
+fn_extract | fn_ol_list | fn_format | { [[ $interactive -eq 1 ]] && less -X -R || cat ; }
