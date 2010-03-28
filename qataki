@@ -3,6 +3,10 @@
 # Qataki is free and unencumbered public domain software. For more
 # information see http://unlicense.org/ or the accompanying UNLICENSE file.
 
+# Options for pager (less)
+opt_pager='-REX'
+
+# Not used yet
 qataki_url="&lt;a href='http://chr.tx0.org/qataki' alt='Qataki' title='Qataki'&gt;qataki&lt;/a&gt;"
 
 usage() {
@@ -168,15 +172,15 @@ fn_download() {
 	[[ $(wc -l < $tmp_file) -le 3 ]] && exit 2
 }
 
-# First, remove tags with sed and put contents on a line (or more if content has
-# more than one line). Then, search for tags of interest with awk, put them in
-# a variable, and show them in a specific order when a defined tag is reached.
+# First, remove tags with sed and put contents on a line. Then, search
+# for tags of interest with awk, put them in a variable, and show them
+# in specific order when a defined tag is reached.
 fn_extract() {
 sed '/<retweeted_status>/,/<\/retweeted_status>/ !{
 s@\(>*\)\([^<>]*\)\(<*\)@\1\
 \2\
 \3@g
-}' $tmp_file | sed '/^$/d;/[<>]/d;/\/$/d' | \
+}' $tmp_file | sed '/^$/d;/[<>]/d' | \
 awk ' /^(screen_name)|(text)|(in_reply_to_screen_name)$/,/^(\/screen_name)|(\/text)|(\/in_reply_to_screen_name)$/ {
 if ( $1 ~ /^screen_name$/ ) { sn=1 ; next }
 if ( $1 ~ /^text$/ ) { txt=1 ; next }
@@ -257,12 +261,14 @@ if [[ $1 = *[fursD] ]] ; then
 fi
 
 # For options that need xmlstarlet
-if [[ $1 = *[frcdR] && -x $(which xml) ]] ; then
-	xml=xml
-elif [[ -x $(which xmlstarlet) ]] ; then
-	xml=xmlstarlet
-else
-	usage no_exe "xml/xmlstarlet"
+if [[ $1 = *[frcdR] ]] ; then
+	if [[ -x $(which xml) ]] ; then
+		xml=xml
+	elif [[ -x $(which xmlstarlet) ]] ; then
+		xml=xmlstarlet
+	else
+		usage no_exe "xml/xmlstarlet"
+	fi
 fi
 
 # XXX: 1) Rewrite options parsing. 2) Make $site/$api etc. better.
@@ -305,7 +311,7 @@ case $1 in
 		  }")
 		  # Format conversation
 		fn_conversation "$conversation_url" | fn_format | \
-		sed '/^$/d' | { [[ $interactive -eq 1 ]] && less -X -R || cat ; } && exit 0 ;;
+		sed '/^$/d' | { [[ $interactive -eq 1 ]] && less $opt_pager || cat ; } && exit 0 ;;
 	*RT) notice_id=$($xml sel -t -m "/statuses/status[$2]" -v id $tmp_file)
 		if [[ "$site" == *tw* ]] ; then
 			site=http://api.twitter.com/1
@@ -331,4 +337,4 @@ case $1 in
 		[[ "$1" != *p ]] && fn_download ;;
 esac
 
-fn_extract | fn_ol_list | fn_format | { [[ $interactive -eq 1 ]] && less -X -R || cat ; }
+fn_extract | fn_ol_list | fn_format | { [[ $interactive -eq 1 ]] && less $opt_pager || cat ; }
