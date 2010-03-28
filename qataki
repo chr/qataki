@@ -49,10 +49,11 @@ EOH
 	It is possible to use only 1 METHOD and, eventually, its OPTION.
 
 	METHOD  OPTION           WHAT
-	  f                      Retrives messages from people you follow.
-	  u     "message"        Updates your status with a "message".
+	  f                      Retrive messages from people you follow.
+	  u     "message"        Update your status with a "message".
 	  m                      Show notices where you are mentioned (@username).
 	  r     <NUMBER>         Reply to message number <NUMBER>.
+	  c     <NUMBER>         Display conversation relative to notice <NUMBER>.
 	  n     <USER>           Show <USER>'s timeline (last statuses).
 	  p                      Show previous messages.
 	  d     <NUMBER>         Show details about notice <NUMBER> (note that
@@ -65,7 +66,7 @@ EOH
 	NOTES:
 
 	<NUMBER>  is the tweet/dent number displayed on the left when you run
-	          "$(basename $0) [i|t] [f]".
+	          "$(basename $0) [i|t] [f|n <USER>]".
 	<USER>    is a user's nickname (AKA screen_name; no spaces).
 	          "message" and "string" are alphanumeric (spaces allowed).
 	<SITE>    is an alias for a StatusNet compatible site. This alias is
