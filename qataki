@@ -313,6 +313,11 @@ case $1 in
 		# Format conversation
 		fn_conversation "$conversation_url" | fn_format | \
 		sed '/^$/d' | { [[ $interactive -eq 1 ]] && less $opt_pager || cat ; } && exit 0 ;;
+	*g) [[ "$site" == *tw* ]] && usage no_impl
+		group=$2
+		api=api/statusnet
+		data="$site/$api/groups/timeline.xml?id=$group"
+		fn_download ;;
 	*RT) notice_id=$($xml sel -t -m "/statuses/status[$2]" -v id $tmp_file)
 		if [[ "$site" == *tw* ]] ; then
 			site=http://api.twitter.com/1
