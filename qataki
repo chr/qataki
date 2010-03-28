@@ -98,8 +98,6 @@ conf_file=$conf_dir/qataki.conf
 
 [[ ! -f $conf_file ]] && touch $conf_file
 
-# XXX: more -R
-
 if which elinks 1>/dev/null ; then
 	render='elinks -dump -force-html -no-numbering -no-references'
 else
@@ -131,7 +129,7 @@ if [[ $1 = *s ]] ; then
 	shift && shift
 fi
 
-# XXX: Be sure to leave out trailang slash
+# XXX: Be sure to leave out trailing slash
 site=$(echo $site | sed 's@\(.*\)/$@\1@')
 
 # Valid characters for for #hashes, @users, !groups
@@ -196,7 +194,7 @@ txt_content=""; sn_content=""; rep_content=""
 }'
 }
 
-fn_context() {
+fn_conversation() {
 	curl -s "$1" | \
 	  sed -n '/<div id="content">/,/<div id="aside_primary"/ p' | \
 	  sed '/<img src=/d;s/<p class=/<span class=/;s@</p>@</span>@;
@@ -249,7 +247,6 @@ fn_real_urls() {
 	'
 }
 
-
 # Options that need authentication
 if [[ $1 = *[fursD] ]] ; then
 	[[ ! -f $HOME/.netrc ]] && usage no_netrc
@@ -267,8 +264,7 @@ else
 	usage no_exe "xml/xmlstarlet"
 fi
 
-
-# XXX: 1) Rewrite opriotns parsing. 2) Make $site/$api etc. better.
+# XXX: 1) Rewrite options parsing. 2) Make $site/$api etc. better.
 case $1 in
 	*f)	[[ -s $last_file ]] && data_par="?count=15&since_id=$(<$last_file)"
 		#data="$site/$api/friends_timeline.xml$data_par"
@@ -301,11 +297,13 @@ case $1 in
 		data="$site/search.atom"
 		fn_download filter ;;
 	*c) [[ "$site" == *tw* ]] && usage no_impl
+		# Restrive conversation URL from status id
 		context_id=$($xml sel -t -m "/statuses/status[$2]" -v in_reply_to_status_id $tmp_file)
 		conversation_url=$(curl -s $site/notice/$context_id | \
 		  sed -n "\@$site/conversation@ { s/[^\"]*\"\([^#]*\).*/\1/ p
 		  }")
-		fn_context "$conversation_url" | fn_format | \
+		  # Format conversation
+		fn_conversation "$conversation_url" | fn_format | \
 		sed '/^$/d' | { [[ $interactive -eq 1 ]] && less -X -R || cat ; } && exit 0 ;;
 	*RT) notice_id=$($xml sel -t -m "/statuses/status[$2]" -v id $tmp_file)
 		if [[ "$site" == *tw* ]] ; then
