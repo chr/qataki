@@ -5,6 +5,7 @@
 
 # Options for pager (less)
 opt_pager='-REX'
+max_chars=140
 
 # Not used yet
 qataki_url="&lt;a href='http://chr.tx0.org/qataki' alt='Qataki' title='Qataki'&gt;qataki&lt;/a&gt;"
@@ -252,6 +253,26 @@ fn_real_urls() {
 	'
 }
 
+fn_interactive_update() {
+	clear
+	while read -n1 char ; do
+		[[ "X$char" = 'X' ]] && char=' ' # XXX: ???
+		case "$char" in
+			'') echo ; echo ; tput sgr0 ; return ;;
+			'') message=${message%?} ;;
+			'') message=$(echo "$message" | sed 's/ *[^ ][^ ]* *$/ /')
+					[[ "$message" = ' ' ]] && message='' ;; # XXX
+			*)	message="$message$char" ;;
+		esac
+		tput cup 0 1
+		char_count=${#message}
+		tput cub $(( ${#message} + ${#char_conut} + 1 ))
+		printf "$char_count $message" && tput ed
+		[[ $char_count -ge $max_chars ]] && tput rev || tput sgr0 # XXX: Buggy
+	done
+	tput sgr0
+}
+
 # Options that need authentication
 if [[ $1 = *[fursD] ]] ; then
 	[[ ! -f $HOME/.netrc ]] && usage no_netrc
@@ -281,6 +302,7 @@ case $1 in
 		echo $last > $last_file ;;
 	*u)	curl -s -n -d "source=Qataki" --data-urlencode "status=$2" $site/$api/update.xml 1>/dev/null
 		exit 0 ;;
+	*U)	fn_interactive_update && exit 0 ;;
 	*m)	data="$site/$api/mentions.xml"
 		fn_download ;; # XXX: doesn't save "$last"
 	*r)	[[ -z $2 ]] && { echo 'Select a number' && exit 1 ; }
@@ -318,7 +340,16 @@ case $1 in
 		api=api/statusnet
 		data="$site/$api/groups/timeline.xml?id=$group"
 		fn_download ;;
-	*RT) notice_id=$($xml sel -t -m "/statuses/status[$2]" -v id $tmp_file)
+	*RT) # If we have a '<feed ' It means that we are not using the API.
+		# E.g., if we searched for notices, then an Atom feed was returned.
+		# In this case we have to use an ad hoc method to extract the id number.
+		if grep '<feed ' $tmp_file 1>/dev/null ; then
+			notice_id=$(sed -n '/<status>/,$ {
+			  /<id>/ p
+			  }' $tmp_file | sed -n "$2 s/.*:\([0-9]*\)<\/id>/\1/p")
+		else
+			notice_id=$($xml sel -t -m "/statuses/status[$2]" -v id $tmp_file)
+		fi
 		if [[ "$site" == *tw* ]] ; then
 			site=http://api.twitter.com/1
 		else
