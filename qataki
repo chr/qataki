@@ -270,8 +270,8 @@ fn_interactive_update() {
 		tput cup 0 1
 		char_count=${#message}
 		tput cub $(( ${#message} + ${#char_conut} + 1 ))
+		[[ $char_count -ge $max_chars ]] && tput rev || tput sgr0
 		printf "$char_count $message" && tput ed
-		[[ $char_count -ge $max_chars ]] && tput rev || tput sgr0 # XXX: Buggy
 	done
 	tput sgr0
 }
