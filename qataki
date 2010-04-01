@@ -102,12 +102,15 @@ esac
 conf_dir=$HOME/.qataki
 conf_file=$conf_dir/qataki.conf
 
+cols=$(tput cols)
+
 [[ ! -f $conf_file ]] && touch $conf_file
 
 if which elinks 1>/dev/null ; then
-	render='elinks -dump -force-html -no-numbering -no-references'
+	render="elinks -dump -dump-width $cols -eval 'set document.browse.margin_width = 0' -force-html -no-numbering -no-references"
 else
-	render='lynx -dump -force_html -stdin -display_charset=utf-8'
+	# There's a -nomargins option, but it's less readable
+	render='lynx -dump -width $cols -force_html -stdin -display_charset=utf-8'
 fi
 
 # XXX: This in not true for bash...
