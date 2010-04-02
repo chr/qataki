@@ -25,22 +25,8 @@ case $1 in
 		echo "$2 is not installed on your system"
 		exit 1 ;;
 	no_auth)
-		echo "Have you set up $HOME/.netrc correctly?"
+		echo "Have you set up $conf_file correctly? Try \"$(basename $0) k\""
 		exit 1 ;;
-	no_netrc)
-		cat <<-EOH
-	You don't have a .netrc file, needed to authenticate you. You can:
-
-	touch $HOME/.netrc
-	chmod 600 $HOME/.netrc
-	echo machine twitter.com login YOU password PASS >> $HOME/.netrc
-	echo machine api.twitter.com login YOU password PASS >> $HOME/.netrc
-	echo machine identi.ca login YOU password PASS >> $HOME/.netrc
-
-	where YOU and PASS are username and password on twitter/identi.ca
-	For info read "THE .netrc FILE" in "man ftp"
-EOH
-	  exit 1 ;;
 	no_impl)
 		echo "Not implemented"
 		exit 1 ;;
@@ -59,7 +45,7 @@ EOH
 	  m                      Show notices where you are mentioned (@username).
 	  r     <NUMBER>         Reply to message number <NUMBER>.
 	  c     <NUMBER>         Display conversation relative to notice <NUMBER>.
-	  n     <USER>           Show <USER>'s timeline (last statuses).
+	  N     <USER>           Show <USER>'s timeline (last statuses).
 	  p                      Show previous messages.
 	  d     <NUMBER>         Show details about notice <NUMBER> (note that
 	                         short links will be replaced by real links).
@@ -106,29 +92,135 @@ tmp_file=$cache_dir/tmp
 twitter=http://twitter.com
 identica=http://identi.ca
 
+umask 0077
+
+fn_configuration() {
+	echo "Create/modify account? [Y/n]"
+	read -n 1 ans && echo
+	[[ $ans = [nN]* ]] && echo 'Nothing done!' && exit 1
+
+	echo >> $conf_file
+
+	select i in Identi.ca Twitter StatusNet ; do
+		[[ $REPLY != [123] ]] && continue
+		case $REPLY in
+			1|2) if [[ $REPLY -eq 1 ]] ; then
+				v_site=identi.ca v_site_name=identica
+				else
+					v_site=twitter.com v_site_name=twitter
+				fi ;;
+			3)	while [[ -z $v_site ]] ; do
+					echo "StatusNet site (e.g., http://micro.example.com):"
+					read v_site
+				done
+				while [[ -z $v_site_alias ]] ; do
+					echo "Choose an alias for $v_site (a short alphanum word)"
+					read v_site_name
+					if [[ $v_site_name = *[!a-zA-Z0-9]* ]] ; then
+						echo "Alphanumeric! Try again." && exit 1
+					fi
+				done
+
+				v_site_full=$v_site
+				v_site=${v_site/http:\/\/} ; v_site=${v_site%/}
+		esac
+
+		[[ $REPLY -le 3 ]] && break
+	done
+
+	echo "Configuring $i"
+
+	while [[ -z $v_nick ]] ; do
+		echo "Nickname:"
+		read v_nick
+	done
+
+	while [[ -z $v_pass ]] ; do
+		echo "Password:"
+		read v_pass
+	done
+
+	echo "Is $v_nick your default $v_site account? [Y/n]"
+	read -n 1 ans && echo
+	if [[ $ans != [nN] ]] ; then
+		if grep default_user_$v_site_name 1>/dev/null $conf_file ; then
+			echo "You already had a default $v_site account."
+		else
+			echo "default_user_$v_site_name=$v_nick" >> $conf_file
+		fi
+	else
+		if ! grep default_user_$v_site_name 1>/dev/null $conf_file ; then
+			echo "You don't have a default $v_site account."
+			echo "Run this configuration again with your default account first."
+			exit 1
+		fi
+	fi
+
+	if grep "machine $v_site login $v_nick" 1>/dev/null $conf_file ; then
+		echo 'That account was already present. Nothing changed.'
+	else
+		echo "machine $v_site login $v_nick password $v_pass" >> $conf_file
+		if [[ $v_site = 'twitter.com' ]] ; then # api.twitter.com *also* needed
+			echo "machine api.$v_site login $v_nick password $v_pass" >> $conf_file
+		fi
+
+	fi
+
+	[[ $REPLY -eq 3 ]] && echo "site $v_site_name $v_site_full" >> $conf_file
+
+	echo "Done!"
+	exit 0
+}
+
+[[ ! -d $cache_dir ]] && mkdir -p $cache_dir # Also $conf_dir
+[[ ! -f $tmp_file ]] && > $tmp_file
+[[ ! -f $conf_file ]] && > $conf_file && fn_configuration
+
 site=$identica api=api/statuses last_file=$cache_dir/last.dent
 
-[[ $1 = t ]] && { site=$twitter api=statuses last_file=$cache_dir/last.tweet ; }
-[[ $1 = [it] ]] && shift
+if [[ $1 = n:* ]] ; then
+	my_nick=$1 my_nick=${my_nick/n:}
+	last_file=$last_file.$my_nick
+	shift
+else
+	my_nick=$(sed -n "s/^default_user_identica=//p" $conf_file)
+fi
 
-if [[ $1 = *s ]] ; then
-	[[ $site = 'http://twitter.com' ]] && usage no_both
+if [[ $1 = t ]] ; then
+	site=$twitter api=statuses last_file=$cache_dir/last.tweet
+	if [[ $2 = n:* ]] ; then
+		my_nick=$2 my_nick=${my_nick/n:}
+		last_file=$last_file.$my_nick
+		shift
+	else
+		my_nick=$(sed -n "s/^default_user_twitter=//p" $conf_file)
+	fi
+	shift
+fi
+
+if [[ $1 = s:* ]] ; then
+	# Identi.ca is not present inside [[ ]] as it's the default value
+	# and will be overwritten anyway is "s:..." is specified
+	[[ $site = *twitter* ]] && usage no_both
+	site_alias=$1 site_alias=${site_alias/s:}
 	if [[ -z $2 ]] ; then
 		usage empty
 	else
-		[[ ! $(grep "$2" $conf_file) ]] && usage no_alias
+		[[ ! $(grep "site $site_alias " $conf_file) ]] && usage no_alias
+		if [[ $2 = n:* ]] ; then
+			my_nick=$2 my_nick=${my_nick/n:}
+			last_file=$last_file.$my_nick
+			shift
+		else
+			my_nick=$(sed -n "s/^default_user_$site_alias=//p" $conf_file)
+		fi
 	fi
-	site=$(awk '/^site(\t| )+'$2'/ {print $3}' $conf_file)
-	last_file=$conf_dir/last.$2
-	shift && shift
+	site=$(awk '/^site(\t| )+'$site_alias'/ {print $3}' $conf_file)
+	last_file=$cache_dir/last.$site_alias
+	shift
 fi
 
-umask 0077
-
-[[ ! -d $cache_dir ]] && mkdir -p $cache_dir # Also $conf_dir
 [[ ! -f $last_file ]] && > $last_file
-[[ ! -f $tmp_file ]] && > $tmp_file
-[[ ! -f $conf_file ]] && touch $conf_file
 
 site=${site%/} # Be sure to leave out trailing slash
 cols=$(tput cols)
@@ -194,6 +286,9 @@ txt_content=""; sn_content=""; rep_content=""
 }'
 }
 
+# An attempt to support conversations. Should be rewritten when API
+# has method for conversations. Basically, the page with the main
+# notice is downloaded (passed with $1) and formatted.
 fn_conversation() {
 	curl -s "$1" | \
 	  sed -n '/<div id="content">/,/<div id="aside_primary"/ p' | \
@@ -246,6 +341,8 @@ fn_real_urls() {
 	'
 }
 
+# This function allows to insert the message on standard input. It will
+# give a count of characters used and will reverse video if chars > $max_chars
 fn_interactive_update() {
 	clear
 	while read -n1 char ; do
@@ -260,18 +357,29 @@ fn_interactive_update() {
 		tput cup 0 1
 		char_count=${#message}
 		tput cub $(( ${#message} + ${#char_conut} + 1 ))
-		[[ $char_count -ge $max_chars ]] && tput rev || tput sgr0
+		[[ $char_count -gt $max_chars ]] && tput rev || tput sgr0
 		printf "$char_count $message" && tput ed
 	done
 	tput sgr0
 }
 
+# For auth we will generate a new .netrc site, after moving the old one.
+# When the scripts exits, restore .netrc (a sane umask was already set):
+trap "mv $HOME/.netrc.$$ $HOME/.netrc 2>/dev/null" EXIT
+
 # Options that need authentication
 if [[ $1 = *[fursD] ]] ; then
-	[[ ! -f $HOME/.netrc ]] && usage no_netrc
+	[[ ! -f $HOME/.netrc ]] && > $HOME/.netrc
+	cp $HOME/.netrc $HOME/.netrc.$$
+
+	site_name=${site/*:\/\/}
+
+	# \(api.\)\?... matches api.twitter.com
+	grep "machine \(api.\)\?$site_name login $my_nick" $conf_file > $HOME/.netrc
+
 	# Check that site (without http[s]://) is in .netrc
-	site_check=$(echo "$site" | sed 's@http[s]*://@@')
-	[[ ! $(grep "$site_check" $HOME/.netrc) ]] && usage no_auth
+	[[ ! $(grep $site_name $HOME/.netrc) ]] && usage no_auth
+
 fi
 
 # For options that need xmlstarlet
@@ -293,7 +401,8 @@ case $1 in
 		fn_download
 		last=$($xml sel -t -m "/statuses/status[1]" -v id $tmp_file)
 		echo $last > $last_file ;;
-	*u)	curl -s -n -d "source=Qataki" --data-urlencode "status=$2" $site/$api/update.xml 1>/dev/null
+	*u)	curl -s -n -d "source=Qataki" --data-urlencode "status=$2" \
+		  $site/$api/update.xml 1>/dev/null
 		exit 0 ;;
 	*U)	fn_interactive_update && exit 0 ;;
 	*m)	data="$site/$api/mentions.xml"
@@ -306,11 +415,11 @@ case $1 in
 		curl -s -n -d "source=Qataki" --data-urlencode "status=@$user_name $msg" \
 		  -d "in_reply_to_status_id=$reply_to" $site/$api/update.xml 1>/dev/null
 		exit 0 ;;
-	*n) [[ "$site" == *tw* ]] && site=http://api.twitter.com/1
+	*N) [[ "$site" == *twitter* ]] && site=http://api.twitter.com/1
 		nick=$2
 		data="$site/$api/user_timeline.xml?screen_name=$nick"
 		fn_download ;;
-	*S)	if [[ "$site" == *tw* ]] ; then
+	*S)	if [[ "$site" == *twitter* ]] ; then
 			site=http://search.twitter.com
 		else
 			site=$identica/api
@@ -318,7 +427,7 @@ case $1 in
 		string=$2
 		data="$site/search.atom"
 		fn_download filter ;;
-	*c) [[ "$site" == *tw* ]] && usage no_impl
+	*c) [[ "$site" == *twitter* ]] && usage no_impl
 		# Restrive conversation URL from status id
 		context_id=$($xml sel -t -m "/statuses/status[$2]" \
 		  -v in_reply_to_status_id $tmp_file)
@@ -328,7 +437,7 @@ case $1 in
 		# Format conversation
 		fn_conversation "$conversation_url" | fn_format | \
 		sed '/^$/d' | less $opt_pager && exit 0 ;;
-	*g) [[ "$site" == *tw* ]] && usage no_impl
+	*g) [[ "$site" == *twitter* ]] && usage no_impl
 		group=$2
 		api=api/statusnet
 		data="$site/$api/groups/timeline.xml?id=$group"
@@ -343,7 +452,7 @@ case $1 in
 		else
 			notice_id=$($xml sel -t -m "/statuses/status[$2]" -v id $tmp_file)
 		fi
-		if [[ "$site" == *tw* ]] ; then
+		if [[ "$site" == *twitter* ]] ; then
 			site=http://api.twitter.com/1
 		else
 			site=$identica
@@ -354,13 +463,14 @@ case $1 in
 	*DM)	to_user=$2 # XXX: FIX URL
 		[[ $to_user = *[!a-zA-Z0-9]* ]] && { echo 'username is alphanum' ; exit 1 ; }
 		[[ -n $3 ]] && dir_msg=$3 || { echo 'Enter a message' ; exit 1 ; }
-		[[ "$site" == *tw* ]] && unset api
+		[[ "$site" == *twitter* ]] && unset api
 		curl -n -X POST -d "source=Qataki" --data-urlencode "user=$to_user" --data-urlencode "text=$dir_msg" \
 		  "$site/api/direct_messages/new.xml" 1>/dev/null
 		echo "$site/api/direct_messages/new.xml"
 		exit 0 ;;
 	*d)	grep '<verified>' $tmp_file 1>/dev/null || site=$identica # verified -> tw
 		fn_details $2 && exit 0 ;;
+	*k)	fn_configuration ;;
 	*h|*H)
 		usage ;;
 	*)	data="$site/$api/public_timeline.xml"
