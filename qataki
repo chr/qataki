@@ -101,29 +101,14 @@ esac
 
 conf_dir=$HOME/.qataki
 conf_file=$conf_dir/qataki.conf
-
-cols=$(tput cols)
-
-[[ ! -f $conf_file ]] && touch $conf_file
-
-if which elinks 1>/dev/null ; then
-	render="elinks -dump -dump-width $cols -eval 'set document.browse.margin_width = 0' -force-html -no-numbering -no-references"
-else
-	# There's a -nomargins option, but it's less readable
-	render="lynx -dump -width $cols -force_html -stdin -display_charset=utf-8"
-fi
-
-# XXX: This in not true for bash...
-[[ -n $PS1 ]] && interactive=1
-# XXX: ... so let's be interactive by default
-interactive=1
-
+cache_dir=$conf_dir/cache
+tmp_file=$cache_dir/tmp
 twitter=http://twitter.com
 identica=http://identi.ca
 
-site=$identica api=api/statuses last_file=$conf_dir/last.dent
+site=$identica api=api/statuses last_file=$cache_dir/last.dent
 
-[[ $1 = t ]] && { site=$twitter api=statuses last_file=$conf_dir/last.tweet ; }
+[[ $1 = t ]] && { site=$twitter api=statuses last_file=$cache_dir/last.tweet ; }
 [[ $1 = [it] ]] && shift
 
 if [[ $1 = *s ]] ; then
@@ -138,27 +123,33 @@ if [[ $1 = *s ]] ; then
 	shift && shift
 fi
 
-# XXX: Be sure to leave out trailing slash
-site=$(echo $site | sed 's@\(.*\)/$@\1@')
+umask 0077
+
+[[ ! -d $cache_dir ]] && mkdir -p $cache_dir # Also $conf_dir
+[[ ! -f $last_file ]] && > $last_file
+[[ ! -f $tmp_file ]] && > $tmp_file
+[[ ! -f $conf_file ]] && touch $conf_file
+
+site=${site%/} # Be sure to leave out trailing slash
+cols=$(tput cols)
+
+if which elinks 1>/dev/null ; then
+	render="elinks -dump -dump-width $cols -eval 'set document.browse.margin_width = 0' -force-html -no-numbering -no-references"
+else
+	# There's a -nomargins option, but it's less readable
+	render="lynx -dump -width $cols -force_html -stdin -display_charset=utf-8"
+fi
 
 # Valid characters for for #hashes, @users, !groups
 chars='a-zA-Z0-9_-'
 
-tmp_file=$conf_dir/tmp
-
-# If interactive embed colour sequences
-if [[ "$interactive" -eq 1 ]] ; then
+# Embed colour sequences
 col_emph='[1;33;40m'
 col_norm='[0m'
 col_link='[1;36;40m'
 col_at='[1;35;40m'
 col_hash='[1;32;40m'
 col_bang='[1;31;40m'
-fi
-
-[[ ! -d "$conf_dir" ]] && mkdir -p $conf_dir
-[[ ! -f $last_file ]] && > $last_file
-[[ ! -f $tmp_file ]] && > $tmp_file
 
 # When local function's $1 is 'filter', more passages are needed
 fn_download() {
@@ -217,8 +208,7 @@ fn_ol_list() {
 
 # Links are searched in a way that http, ftp and gopher are valid links.
 fn_format() {
-	{ [[ $interactive -eq 1 ]] &&  eval $render || {
-		fmt | nl -s ' ' -w 3 -b p^* ; } ; } | \
+	eval $render | \
 	sed "s/^\([^1-9]*[1-9][0-9]*\.[^\*]*\)\*\([^ ][^ ]*\)\*:/\1$col_emph\2$col_norm:/;\
 	     s@\([fgh][a-zA-Z]*://[^ ][^ ]*[a-zA-Z0-9/]\)@$col_link\1$col_norm@g;\
 		 s/\(@[$chars][$chars]*\)/$col_at\1$col_norm/g;\
@@ -337,7 +327,7 @@ case $1 in
 		    }")
 		# Format conversation
 		fn_conversation "$conversation_url" | fn_format | \
-		sed '/^$/d' | { [[ $interactive -eq 1 ]] && less $opt_pager || cat ; } && exit 0 ;;
+		sed '/^$/d' | less $opt_pager && exit 0 ;;
 	*g) [[ "$site" == *tw* ]] && usage no_impl
 		group=$2
 		api=api/statusnet
@@ -377,4 +367,4 @@ case $1 in
 		[[ "$1" != *p ]] && fn_download ;;
 esac
 
-fn_extract | fn_ol_list | fn_format | { [[ $interactive -eq 1 ]] && less $opt_pager || cat ; }
+fn_extract | fn_ol_list | fn_format | less $opt_pager
