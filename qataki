@@ -43,7 +43,8 @@ case $1 in
 	OPTION    ARGUMENT         RESULT
 	f                          Retrive messages from people you follow.
 	u         "message"        Update your status with a "message".
-	U                          Type a message interactively and update status.
+	U                          Type a message interactively and update status
+	                           (end message with ^D (that is Control-d)).
 	m                          Show notices where you are mentioned (@you).
 	r         <NUMBER>         Reply to message number <NUMBER>.
 	c         <NUMBER>         Show conversation relative to notice <NUMBER>.
@@ -368,7 +369,7 @@ fn_interactive_update() {
 	while read -n1 char ; do
 		[[ "X$char" = 'X' ]] && char=' ' # XXX: ???
 		case "$char" in
-			'') echo ; echo ; tput sgr0 ; return ;;
+			''|'') echo ; echo ; tput sgr0 ; return ;; # XXX: ^M ???
 			'') message=${message%?} ;;
 			'') message=$(echo "$message" | sed 's/ *[^ ][^ ]* *$/ /')
 					[[ "$message" = ' ' ]] && message='' ;; # XXX
@@ -388,7 +389,7 @@ fn_interactive_update() {
 trap "mv $HOME/.netrc.$$ $HOME/.netrc 2>/dev/null" EXIT
 
 # Options that need authentication
-if [[ $1 = *[fursD] ]] ; then
+if [[ $1 = *[fuUrsD] ]] ; then
 	[[ ! -f $HOME/.netrc ]] && > $HOME/.netrc
 	cp $HOME/.netrc $HOME/.netrc.$$
 
@@ -422,9 +423,12 @@ case $1 in
 		last=$($xml sel -t -m "/statuses/status[1]" -v id $tmp_file)
 		echo $last > $last_file ;;
 	*u)	curl -s -n -d "source=Qataki" --data-urlencode "status=$2" \
+		#  $site/$api/update.xml 1>/dev/null
+		exit 0 ;;
+	*U)	message= ; fn_interactive_update
+		curl -s -n -d "source=Qataki" --data-urlencode "status=$message" \
 		  $site/$api/update.xml 1>/dev/null
 		exit 0 ;;
-	*U)	fn_interactive_update && exit 0 ;;
 	*m)	data="$site/$api/mentions.xml"
 		fn_download ;; # XXX: doesn't save "$last"
 	*r)	[[ -z $2 ]] && { echo 'Select a number' && exit 1 ; }
