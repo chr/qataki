@@ -132,7 +132,7 @@ fn_configuration() {
 					echo "StatusNet site (e.g., http://micro.example.com):"
 					read v_site
 				done
-				while [[ -z $v_site_alias ]] ; do
+				while [[ -z $v_site_name ]] ; do
 					echo "Choose an alias for $v_site (a short alphanum word)"
 					read v_site_name
 					if [[ $v_site_name = *[!a-zA-Z0-9]* ]] ; then
@@ -196,6 +196,7 @@ fn_configuration() {
 [[ ! -f $conf_file ]] && > $conf_file && fn_configuration
 
 site=$identica api=api/statuses last_file=$cache_dir/last.dent
+[[ $1 = i ]] && shift
 
 if [[ $1 = n:* ]] ; then
 	my_nick=$1 my_nick=${my_nick/n:}
