@@ -423,7 +423,7 @@ case $1 in
 		last=$($xml sel -t -m "/statuses/status[1]" -v id $tmp_file)
 		echo $last > $last_file ;;
 	*u)	curl -s -n -d "source=Qataki" --data-urlencode "status=$2" \
-		#  $site/$api/update.xml 1>/dev/null
+		  $site/$api/update.xml 1>/dev/null
 		exit 0 ;;
 	*U)	message= ; fn_interactive_update
 		curl -s -n -d "source=Qataki" --data-urlencode "status=$message" \
