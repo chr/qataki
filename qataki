@@ -425,7 +425,7 @@ if [[ $1 = *[fuUrsD] ]] ; then
 fi
 
 # For options that need xmlstarlet
-if [[ $1 = *[frcdR] ]] ; then
+if [[ $1 = *[rcdR] ]] ; then
 	if [[ -x $(which xml) ]] ; then
 		xml=xml
 	elif [[ -x $(which xmlstarlet) ]] ; then
