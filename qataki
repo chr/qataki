@@ -242,7 +242,8 @@ if [[ $1 = s:* ]] ; then
 	shift
 fi
 
-[[ ! -f $last_file ]] && > $last_file
+# $last_file is 3 lines, where last statuses ids will be placed
+[[ ! -f $last_file ]] && printf "\n\n\n" > $last_file
 
 site=${site%/} # Be sure to leave out trailing slash
 cols=$(tput cols)
@@ -278,7 +279,7 @@ fn_download() {
 	fi ; } || exit 1
 
 	# A file <= 3 lines (always sufficient?) is a file with an error
-	[[ $(wc -l < $tmp_file) -le 3 ]] && exit 2
+	[[ $(wc -l < $tmp_file) -gt 3 ]] && return || exit 2
 }
 
 # First, remove tags with sed and put contents on a line. Then, search
@@ -343,6 +344,20 @@ full_notice=$($xml sel -t -m "/statuses/status[$answ]" \
 
 echo "$full_notice" | grep ^Text | fn_real_urls
 echo "$full_notice" | grep -v ^Text
+}
+
+# Search for the first <id> and assign its value to $last. (Even if
+# both <status> and <user> have an <id>, <status> always comes first.)
+# Then, update $last file with this new value.
+# The argument passed to this function is the kind of <id> on which we
+# we are interested on: 1 => home_timeline; 2 => mentions
+fn_last_status() {
+last=$(sed -n '/<id>/p' $tmp_file | \
+  sed -n '1s@[[:space:]]*<id>\([^<]*\)</id>@\1@p')
+sed "$1 c\\
+$last
+" $last_file > $last_file.tmp
+mv $last_file.tmp $last_file
 }
 
 # This will output HTTP header field "Location".
@@ -417,13 +432,14 @@ fi
 
 # XXX: 1) Rewrite options parsing. 2) Make $site/$api etc. better.
 case $1 in
-	*f)	[[ -s $last_file ]] && data_par="count=15&since_id=$(<$last_file)"
+	*f)	if [[ -f $last_file ]] ; then
+			last_stat=$(sed -n "1p" $last_file)
+			data_par="since_id=$last_stat"
+		fi
 		data_par="${data_par}&count=$max_stats"
 		#data="$site/$api/friends_timeline.xml$data_par"
 		data="$site/$api/home_timeline.xml?$data_par"
-		fn_download
-		last=$($xml sel -t -m "/statuses/status[1]" -v id $tmp_file)
-		echo $last > $last_file ;;
+		fn_download && fn_last_status 1 ;;
 	*u)	curl -s -n -d "source=Qataki" --data-urlencode "status=$2" \
 		  $site/$api/update.xml 1>/dev/null
 		exit 0 ;;
@@ -431,8 +447,13 @@ case $1 in
 		curl -s -n -d "source=Qataki" --data-urlencode "status=$message" \
 		  $site/$api/update.xml 1>/dev/null
 		exit 0 ;;
-	*m)	data="$site/$api/mentions.xml?count=$max_stats"
-		fn_download ;; # XXX: doesn't save "$last"
+	*m)	if [[ -f $last_file ]] ; then
+			last_stat=$(sed -n "2p" $last_file)
+			data_par="since_id=$last_stat"
+		fi
+		data_par="${data_par}&count=$max_stats"
+		data="$site/$api/mentions.xml?$data_par"
+		fn_download && fn_last_status 2 ;;
 	*r)	[[ -z $2 ]] && { echo 'Select a number' && exit 1 ; }
 		[[ $2 = *[!0-9]* ]] && { echo 'Number' && exit 1 ; }
 		reply_to=$($xml sel -t -m "/statuses/status[$2]" -v id $tmp_file)
