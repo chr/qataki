@@ -249,7 +249,7 @@ site=${site%/} # Be sure to leave out trailing slash
 cols=$(tput cols)
 
 if which elinks 1>/dev/null ; then
-	render="elinks -dump -dump-width $cols -eval 'set document.browse.margin_width = 0' -force-html -no-numbering -no-references"
+	render="elinks -dump -dump-width $cols -eval 'set document.browse.margin_width = 1' -force-html -no-numbering -no-references"
 else
 	# There's a -nomargins option, but it's less readable
 	render="lynx -dump -width $cols -force_html -stdin -display_charset=utf-8"
