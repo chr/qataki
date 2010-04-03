@@ -1,0 +1,31 @@
+0.02	2010-04-02
+
+	* Added multiple account support.
+
+	* Added option to compose message interactively.
+
+	* Added an interactive configuration option.
+
+	* Removed argument for "s" option. Now a StatusNet site
+	  has to be specified as "qataki s:ALIAS", instead of
+	  "qataki s ALIAS".
+
+	* Modified dump options for browsers.
+
+0.01	2010-03-28
+
+	* Added timelines for users and groups.
+
+	* Conversations support.
+
+	* Bugfixes.
+
+0.01b	2010-03-28
+
+	* Bugfixes
+
+	* Experimental conversations support.
+
+0.01a	2010-03-25
+
+	* First public version.
