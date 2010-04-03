@@ -439,9 +439,9 @@ fi
 case $1 in
 	*f)	if [[ $2 != F && -f $last_file ]] ; then
 			last_stat=$(sed -n "1p" $last_file)
-			data_par="since_id=$last_stat"
+			[[ $last_stat = *[0-9]* ]] || last_stat=1
 		fi
-		data_par="${data_par}&count=$max_stats"
+		data_par="since_id=${last_stat}&count=$max_stats"
 		#data="$site/$api/friends_timeline.xml$data_par"
 		data="$site/$api/home_timeline.xml?$data_par"
 		fn_download && fn_last_status 1 ;;
@@ -454,9 +454,9 @@ case $1 in
 		exit 0 ;;
 	*m)	if [[ $2 != F && -f $last_file ]] ; then
 			last_stat=$(sed -n "2p" $last_file)
-			data_par="since_id=$last_stat"
+			[[ $last_stat = *[0-9]* ]] || last_stat=1
 		fi
-		data_par="${data_par}&count=$max_stats"
+		data_par="since_id=${last_stat}&count=$max_stats"
 		data="$site/$api/mentions.xml?$data_par"
 		fn_download && fn_last_status 2 ;;
 	*r)	[[ -z $2 ]] && { echo 'Select a number' && exit 1 ; }
