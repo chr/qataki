@@ -3,9 +3,10 @@
 # Qataki is free and unencumbered public domain software. For more
 # information see http://unlicense.org/ or the accompanying UNLICENSE file.
 
-# Options for pager (less)
-opt_pager='-REX'
-max_chars=140
+
+opt_pager='-REX' 	# Options for pager (less)
+max_chars=140		# Max characters on update messages
+max_stats=30		# Max number of statuses to display
 
 # Not used yet
 qataki_url="&lt;a href='http://chr.tx0.org/qataki' alt='Qataki' title='Qataki'&gt;qataki&lt;/a&gt;"
@@ -416,9 +417,10 @@ fi
 
 # XXX: 1) Rewrite options parsing. 2) Make $site/$api etc. better.
 case $1 in
-	*f)	[[ -s $last_file ]] && data_par="?count=15&since_id=$(<$last_file)"
+	*f)	[[ -s $last_file ]] && data_par="count=15&since_id=$(<$last_file)"
+		data_par="${data_par}&count=$max_stats"
 		#data="$site/$api/friends_timeline.xml$data_par"
-		data="$site/$api/home_timeline.xml$data_par"
+		data="$site/$api/home_timeline.xml?$data_par"
 		fn_download
 		last=$($xml sel -t -m "/statuses/status[1]" -v id $tmp_file)
 		echo $last > $last_file ;;
@@ -429,7 +431,7 @@ case $1 in
 		curl -s -n -d "source=Qataki" --data-urlencode "status=$message" \
 		  $site/$api/update.xml 1>/dev/null
 		exit 0 ;;
-	*m)	data="$site/$api/mentions.xml"
+	*m)	data="$site/$api/mentions.xml?count=$max_stats"
 		fn_download ;; # XXX: doesn't save "$last"
 	*r)	[[ -z $2 ]] && { echo 'Select a number' && exit 1 ; }
 		[[ $2 = *[!0-9]* ]] && { echo 'Number' && exit 1 ; }
@@ -441,7 +443,7 @@ case $1 in
 		exit 0 ;;
 	*N) [[ "$site" == *twitter* ]] && site=http://api.twitter.com/1
 		nick=$2
-		data="$site/$api/user_timeline.xml?screen_name=$nick"
+		data="$site/$api/user_timeline.xml?screen_name=${nick}&count=$max_stats"
 		fn_download ;;
 	*S)	if [[ "$site" == *twitter* ]] ; then
 			site=http://search.twitter.com
@@ -449,7 +451,7 @@ case $1 in
 			site=$identica/api
 		fi
 		string=$2
-		data="$site/search.atom"
+		data="$site/search.atom&rpp=$max_stats"
 		fn_download filter ;;
 	*c) [[ "$site" == *twitter* ]] && usage no_impl
 		# Restrive conversation URL from status id
@@ -464,7 +466,7 @@ case $1 in
 	*g) [[ "$site" == *twitter* ]] && usage no_impl
 		group=$2
 		api=api/statusnet
-		data="$site/$api/groups/timeline.xml?id=$group"
+		data="$site/$api/groups/timeline.xml?id=$group&count=$max_stats"
 		fn_download ;;
 	*RT) # If we have a '<feed ' It means that we are not using the API.
 		# E.g., if we searched for notices, then an Atom feed was returned.
