@@ -32,62 +32,67 @@ case $1 in
 		echo "Not implemented"
 		exit 1 ;;
 	*)
-		cat <<-EOH
+		cat <<EOH
 
-	$(basename $0) [i|t|s:<SITE>] [n:<NICK>] [<OPTION> [<ARGUMENT>]]
+$(basename $0) [i|t|s:<SITE>] [n:<NICK>] [<OPTION> [<ARGUMENT>]]
 
-	The first (optional) flag can be: i (identi.ca) OR t (twitter) or
-	s:<SITE> (see below). If none of of these three flags are given,
-	then Identi.ca will be used. It is possible to use only 1 OPTION
-	and, eventually, its ARGUMENT.
+The first (optional) flag can be: i (identi.ca) OR t (twitter) or
+s:<SITE> (see below). If none of of these three flags are given,
+then Identi.ca will be used. It is possible to use only 1 OPTION
+and, eventually, its ARGUMENT.
 
-	OPTION    ARGUMENT         RESULT
-	f                          Retrive messages from people you follow.
-	u         "message"        Update your status with a "message".
-	U                          Type a message interactively and update status
-	                           (end message with ^D (that is Control-d)).
-	m                          Show notices where you are mentioned (@you).
-	r         <NUMBER>         Reply to message number <NUMBER>.
-	c         <NUMBER>         Show conversation relative to notice <NUMBER>.
-	n:<NICK>  <OPTION>         Use an alternate nick. This option can be
-	                           preceded by [i|t|s:<SITE>] (i by default).
-	N         <USER>           Show <USER>'s timeline (last statuses).
-	p                          Show previous messages.
-	d         <NUMBER>         Show details about notice <NUMBER> (note that
-	                           short links will be replaced by real links).
-	s:<SITE>  <OPTION>         Use <OPTION> (exept s itself) on <SITE>.
-	k                          Configure an account.
-	S         "string"         Search messages for "a string".
-	RT        <NUMBER>         Retweet message number <NUMBER>.
-	DM        <USER> "message" Send a DM (with text "message") to <USER>.
+OPTION    ARGUMENT         RESULT
 
-	NOTES:
+f         [F]              Retrive messages from people you follow.
+                           If you use the optional "F" argument, all statuses
+                           will be displayed. Otherwise only new statuses.
+u         "message"        Update your status with a "message".
+U                          Type a message interactively and update status
+                           (end message with ^D (that is Control-d)).
+m         [F]              Show notices where you are mentioned (@you).
+                           If you use the optional "F" argument, all statuses
+                           will be displayed. Otherwise only new statuses.
+r         <NUMBER>         Reply to message number <NUMBER>.
+c         <NUMBER>         Show conversation relative to notice <NUMBER>.
+n:<NICK>  <OPTION>         Use an alternate nick. This option can be
+                           preceded by [i|t|s:<SITE>] (i by default).
+N         <USER>           Show <USER>'s timeline (last statuses).
+p                          Show previous messages.
+d         <NUMBER>         Show details about notice <NUMBER> (note that
+                           short links will be replaced by real links).
+s:<SITE>  <OPTION>         Use <OPTION> (exept s itself) on <SITE>.
+k                          Configure an account.
+S         "string"         Search messages for "a string".
+RT        <NUMBER>         Retweet message number <NUMBER>.
+DM        <USER> "message" Send a DM (with text "message") to <USER>.
 
-	<NUMBER>  is the tweet/dent number displayed on the left when you run
-	          "$(basename $0) [i|t|s<SITE>] [n:<NICK>] [f|N <USER>]".
-	<NICK>    is an alternate nickname. You have to pass *alternate* nicknames
-	          on the command line as n:<NICK>. On the contrary, you don't have
-	          to specify your *default* nickname. For this, your default nick
-	          has to be placed in $conf_file. This is done by default when
-	          you use the "k" option. Anyway, the syntax for default nicks is:
+NOTES:
 
-	          default_user_SERVICE=YOUR_DEFAULT_NICK
+<NUMBER>  is the tweet/dent number displayed on the left when you run
+          "$(basename $0) [i|t|s<SITE>] [n:<NICK>] [f|N <USER>]".
+<NICK>    is an alternate nickname. You have to pass *alternate* nicknames
+          on the command line as n:<NICK>. On the contrary, you don't have
+          to specify your *default* nickname. For this, your default nick
+          has to be placed in $conf_file. This is done by default when
+          you use the "k" option. Anyway, the syntax for default nicks is:
 
-	          where "SERVICE" can be identica, twitter or <SITE> (see below)
-	          and YOUR_DEFAULT_NICK is... your default nick on SERVICE.
-	<USER>    is a user's nickname (AKA screen_name; no spaces).
-	<SITE>    is an alias for a StatusNet compatible site. This alias is
-	          the second field of a line on $conf_file structured like:
+          default_user_SERVICE=YOUR_DEFAULT_NICK
 
-	          site ALIAS http://micro.example.com
+          where "SERVICE" can be identica, twitter or <SITE> (see below)
+          and YOUR_DEFAULT_NICK is... your default nick on SERVICE.
+<USER>    is a user's nickname (AKA screen_name; no spaces).
+<SITE>    is an alias for a StatusNet compatible site. This alias is
+          the second field of a line on $conf_file structured like:
 
-	          You'll be able to use ALIAS as argument for "s" option, like:
+          site ALIAS http://micro.example.com
 
-	          "$(basename $0) s:ALIAS [n:<NICK>] f".
+          You'll be able to use ALIAS as argument for "s" option, like:
 
-	          (with the latter example you'll see notices from people you
-	          follow on http://micro.example.com). For convevience, try to keep
-	          ALIAS short.
+          "$(basename $0) s:ALIAS [n:<NICK>] f".
+
+          (with the latter example you'll see notices from people you
+          follow on http://micro.example.com). For convevience, try to keep
+          ALIAS short.
 
 Authorisation is handled by curl with it's "-n" option. This means that a
 .netrc file (located in \$HOME) is used. Qataki generates .netrc dinamically
