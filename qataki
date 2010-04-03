@@ -432,7 +432,7 @@ fi
 
 # XXX: 1) Rewrite options parsing. 2) Make $site/$api etc. better.
 case $1 in
-	*f)	if [[ -f $last_file ]] ; then
+	*f)	if [[ $2 != F && -f $last_file ]] ; then
 			last_stat=$(sed -n "1p" $last_file)
 			data_par="since_id=$last_stat"
 		fi
@@ -447,7 +447,7 @@ case $1 in
 		curl -s -n -d "source=Qataki" --data-urlencode "status=$message" \
 		  $site/$api/update.xml 1>/dev/null
 		exit 0 ;;
-	*m)	if [[ -f $last_file ]] ; then
+	*m)	if [[ $2 != F && -f $last_file ]] ; then
 			last_stat=$(sed -n "2p" $last_file)
 			data_par="since_id=$last_stat"
 		fi
