@@ -410,7 +410,7 @@ fn_interactive_update() {
 trap "mv $HOME/.netrc.$$ $HOME/.netrc 2>/dev/null" EXIT
 
 # Options that need authentication
-if [[ $1 = *[fuUrsD] ]] ; then
+if [[ $1 = *[fuUrmsD] ]] ; then
 	[[ ! -f $HOME/.netrc ]] && > $HOME/.netrc
 	cp $HOME/.netrc $HOME/.netrc.$$
 
