@@ -13,6 +13,9 @@ qataki_url="&lt;a href='http://chr.tx0.org/qataki' alt='Qataki' title='Qataki'&g
 
 usage() {
 case $1 in
+	file_miss)
+		echo "File is either non-existent or its size is 0."
+		exit 1 ;;
 	empty)
 		echo "Forgot an option?"
 		exit 1 ;;
@@ -523,6 +526,13 @@ case $1 in
 	*d)	grep '<verified>' $tmp_file 1>/dev/null || site=$identica # verified -> tw
 		fn_details $2 && exit 0 ;;
 	*k)	fn_configuration ;;
+	paste*) file=$2
+		syntax=$(echo "$1" | awk -F: '{ print $2 }')
+		[[ ! -s $file ]] && usage file_miss
+		[[ -n $syntax ]] && extra_paste="-d paste_format=$syntax"
+		paste=$(curl -s $extra_paste --data-urlencode "paste_code@$file" \
+		  http://pastebin.com/api_public.php)
+		  echo $paste && exit 1 ;;
 	*h|*H)
 		usage ;;
 	*)	data="$site/$api/public_timeline.xml"
