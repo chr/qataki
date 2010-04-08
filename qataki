@@ -428,7 +428,7 @@ if [[ $1 = *[fuUrmsD] ]] ; then
 fi
 
 # For options that need xmlstarlet
-if [[ $1 = *[rcdR] ]] ; then
+if [[ $1 = *[rcd] ]] ; then
 	if [[ -x $(which xml) ]] ; then
 		xml=xml
 	elif [[ -x $(which xmlstarlet) ]] ; then
@@ -497,22 +497,23 @@ case $1 in
 		api=api/statusnet
 		data="$site/$api/groups/timeline.xml?id=$group&count=$max_stats"
 		fn_download ;;
-	*RT) # If we have a '<feed ' It means that we are not using the API.
-		# E.g., if we searched for notices, then an Atom feed was returned.
-		# In this case we have to use an ad hoc method to extract the id number.
-		if grep '<feed ' $tmp_file 1>/dev/null ; then
-			notice_id=$(sed -n '/<status>/,$ {
-			  /<id>/ p
-			  }' $tmp_file | sed -n "$2 s/.*:\([0-9]*\)<\/id>/\1/p")
+	*RT) if grep '<feed ' $tmp_file 1>/dev/null ; then
+		re1='$' re2=':' # This case is when file returned is Atom
 		else
-			notice_id=$($xml sel -t -m "/statuses/status[$2]" -v id $tmp_file)
+			re1='/<user>/' re2='<id>' # This is normal case (e.g., API)
 		fi
+
+		# Notice that the '$2' in last sed is the second parameter
+		notice_id=$(sed -n "/<status>/,$re1 {
+		  /<id>/ p
+		  }" $tmp_file | sed -n "$2 s/.*$re2\([0-9]*\)<\/id>/\1/p")
+
 		if [[ "$site" == *twitter* ]] ; then
 			site=http://api.twitter.com/1
 		else
 			site=$identica
 		fi
-		# XXX: can't retweet searched notices
+
 		curl -f -s -n -X POST -d "source=Qataki" "$site/$api/retweet/$notice_id.xml" 1>/dev/null
 		exit 0 ;;
 	*DM)	to_user=$2 # XXX: FIX URL
