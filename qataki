@@ -408,12 +408,7 @@ fn_interactive_update() {
 	tput sgr0
 }
 
-# For auth we will generate a new .netrc site, after moving the old one.
-# When the scripts exits, restore .netrc (a sane umask was already set):
-trap "mv $HOME/.netrc.$$ $HOME/.netrc 2>/dev/null" EXIT
-
-# Options that need authentication
-if [[ $1 = *[fuUrmsD] ]] ; then
+fn_prepare_auth() {
 	[[ ! -f $HOME/.netrc ]] && > $HOME/.netrc
 	cp $HOME/.netrc $HOME/.netrc.$$
 
@@ -424,8 +419,14 @@ if [[ $1 = *[fuUrmsD] ]] ; then
 
 	# Check that site (without http[s]://) is in .netrc
 	[[ ! $(grep $site_name $HOME/.netrc) ]] && usage no_auth
+}
 
-fi
+# For auth we will generate a new .netrc site, after moving the old one.
+# When the scripts exits, restore .netrc (a sane umask was already set):
+trap "mv $HOME/.netrc.$$ $HOME/.netrc 2>/dev/null" EXIT
+
+# Options that need authentication
+[[ $1 = *[fuUrms] || $1 = *RT || $1 = *DM ]] && fn_prepare_auth
 
 # For options that need xmlstarlet
 if [[ $1 = *[rcd] ]] ; then
