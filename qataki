@@ -254,7 +254,8 @@ fi
 [[ ! -f $last_file ]] && printf "\n\n\n" > $last_file
 
 site=${site%/} # Be sure to leave out trailing slash
-cols=$(tput cols)
+cols=$(( $(tput cols) - 2 ))
+[[ $cols -le 10 ]] && cols=78 # If 'tput cols' fails
 
 if which elinks 1>/dev/null ; then
 	render="elinks -dump -dump-width $cols -eval 'set document.browse.margin_width = 1' -force-html -no-numbering -no-references"
