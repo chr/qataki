@@ -482,7 +482,7 @@ case $1 in
 			site=$identica/api
 		fi
 		string=$2
-		data="$site/search.atom&rpp=$max_stats"
+		data="$site/search.atom?rpp=$max_stats"
 		fn_download filter ;;
 	*c) [[ "$site" == *twitter* ]] && usage no_impl
 		# Restrive conversation URL from status id
