@@ -66,8 +66,8 @@ d         <NUMBER>         Show details about notice <NUMBER> (note that
 s:<SITE>  <OPTION>         Use <OPTION> (exept s itself) on <SITE>.
 k                          Configure an account.
 S         "string"         Search messages for "a string".
-RT        <NUMBER>         Retweet message number <NUMBER>.
-DM        <USER> "message" Send a DM (with text "message") to <USER>.
+R        <NUMBER>          Retweet message number <NUMBER>.
+D        <USER> "message"  Send a direct msg (with text "message") to <USER>.
 
 NOTES:
 
