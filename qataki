@@ -448,17 +448,6 @@ trap "mv $HOME/.netrc.$$ $HOME/.netrc 2>/dev/null" EXIT
 # Options that need authentication
 [[ $1 = *[fuUrmsRD] ]] && fn_prepare_auth
 
-# For options that need xmlstarlet
-if [[ $1 = *[rcd] ]] ; then
-	if [[ -x $(which xml) ]] ; then
-		xml=xml
-	elif [[ -x $(which xmlstarlet) ]] ; then
-		xml=xmlstarlet
-	else
-		usage no_exe "xml/xmlstarlet"
-	fi
-fi
-
 # XXX: 1) Rewrite options parsing. 2) Make $site/$api etc. better.
 case $1 in
 	*f)	if [[ $2 != F && -f $last_file ]] ; then
