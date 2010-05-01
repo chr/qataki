@@ -345,14 +345,25 @@ fn_format() {
 
 fn_details() {
 answ=$1 # This variable is always the notice (twit/dent) number.
-full_notice=$($xml sel -t -m "/statuses/status[$answ]" \
- -o "User: " -v user/screen_name -n \
- -o "Text: " -v text -i "in_reply_to_user_id>0" -n \
- -o "Reply: $site/" -v in_reply_to_screen_name -o "/" -v in_reply_to_status_id \
- -b -n -o "Date: " -v created_at $tmp_file)
 
-echo "$full_notice" | grep ^Text | fn_real_urls
-echo "$full_notice" | grep -v ^Text
+status_start=$(sed -n '/<status>/=' $tmp_file | sed -n ${answ}p)
+status_end=$(sed -n '/<\/status>/=' $tmp_file | sed -n ${answ}p)
+
+sed 's/&lt;/</g;s/&gt;/>/g;s/&quot;/"/g' $tmp_file | \
+sed -n "$status_start,$status_end {
+s@<text>\([^<]*\)<*.*@<li>Status: \1@p
+# Sometimes a status can have a new line:
+s@^[[:space:]][[:space:]]*[^<[:space:]]\([^<][^<]*\)<*/.*@\1@p
+s@<screen_name>\(.*\)</screen_name>@<li>Nick: \1@p
+s@<name>\(.*\)</name>@<li>Name: \1@p
+s@<location>\(.*\)</location>@<li>Location: \1@p
+s@<url>\(.*\)</url>@<li>URL: \1@p
+/<status>/,/<user>/ {
+s@<created_at>\(.*\)</created_at>@<li>Date: \1@p
+s@<source>\(.*\)</source>@<li>From: \1@p
+}
+}" | fn_real_urls | fn_format
+
 }
 
 # Search for the first <id> and assign its value to $last. (Even if
@@ -373,17 +384,18 @@ mv $last_file.tmp $last_file
 # So, give this function a short URL, and will ourput real URL.
 fn_real_urls() {
 	awk ' BEGIN { ORS=" " }
-	{
-	url_re = "http://[^ ]*"
+	/Status:/ {
+	url_re = "http://[^ ]+"
 	for (i=1; i<=NF; i++) {
 		if (i==NF) { ORS="\n" }
 		x=$i
 		if (match($i, url_re)) {
 			"curl -s -I \""$i"\" | sed -n \"s@Location: \\(.*\\)@\\1@p\"" | \
-			getline x
+			  getline x
 			print x
 		} else { print x }
 	} }
+	!/Status:/ { print }
 	'
 }
 
@@ -420,6 +432,13 @@ fn_prepare_auth() {
 
 	# Check that site (without http[s]://) is in .netrc
 	[[ ! $(grep $site_name $HOME/.netrc) ]] && usage no_auth
+}
+
+fn_status_info() {
+	delim_1="$1" delim_2="$2" tag_o="$3" tag_c="</${tag_o#<}"
+	sed -n "$delim_1,$delim_2 {
+	  /$tag_o/ p
+	}" $tmp_file | sed -n "$status_num s@.*$tag_o\($tag_cont_re*\)$tag_c@\1@p"
 }
 
 # For auth we will generate a new .netrc site, after moving the old one.
@@ -464,10 +483,10 @@ case $1 in
 		data_par="since_id=${last_stat}&count=$max_stats"
 		data="$site/$api/mentions.xml?$data_par"
 		fn_download && fn_last_status 2 ;;
-	*r)	[[ -z $2 ]] && { echo 'Select a number' && exit 1 ; }
-		[[ $2 = *[!0-9]* ]] && { echo 'Number' && exit 1 ; }
-		reply_to=$($xml sel -t -m "/statuses/status[$2]" -v id $tmp_file)
-		user_name=$($xml sel -t -m "/statuses/status[$2]/user" -v screen_name $tmp_file)
+	*r)	[[ -z $2 || $2 = *[!0-9]* ]] && { echo 'Select a number' && exit 1 ; }
+		status_num=$2 tag_cont_re='.'
+		reply_to=$(fn_status_info '/<status>/' '/<user>/' '<id>')
+		user_name=$(fn_status_info '/<user>/' '/<status>/' '<screen_name>')
 		[[ -n $3 ]] && msg=$3 || { echo 'Message?' ; exit 1 ; }
 		curl -s -n -d "source=Qataki" --data-urlencode "status=@$user_name $msg" \
 		  -d "in_reply_to_status_id=$reply_to" $site/$api/update.xml 1>/dev/null
@@ -486,8 +505,8 @@ case $1 in
 		fn_download filter ;;
 	*c) [[ "$site" == *twitter* ]] && usage no_impl
 		# Restrive conversation URL from status id
-		context_id=$($xml sel -t -m "/statuses/status[$2]" \
-		  -v in_reply_to_status_id $tmp_file)
+		status_num=$2 tag_cont_re='.'
+		context_id=$(fn_status_info '/status/' '/user/' '<in_reply_to_status_id>')
 		conversation_url=$(curl -L -s $site/notice/$context_id | \
 		  sed -n "/>in context</ { s/[^\"]*\"\([^#]*\).*/\1/ p
 		    }")
@@ -505,11 +524,10 @@ case $1 in
 			re1='/<user>/' re2='<id>' # This is normal case (e.g., API)
 		fi
 
-		# Notice that the '$2' in last sed is the second parameter
-		notice_id=$(sed -n "/<status>/,$re1 {
-		  /<id>/ p
-		  }" $tmp_file | sed -n "$2 s/.*$re2\([0-9]*\)<\/id>/\1/p")
+		status_num=$2 tag_cont_re='.'
+		notice_id=$(fn_status_info '/<status>/' $re1 $re2)
 
+		echo $notice_id && exit 1
 		if [[ "$site" == *twitter* ]] ; then
 			site=http://api.twitter.com/1
 		else
