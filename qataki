@@ -427,7 +427,7 @@ fn_prepare_auth() {
 trap "mv $HOME/.netrc.$$ $HOME/.netrc 2>/dev/null" EXIT
 
 # Options that need authentication
-[[ $1 = *[fuUrms] || $1 = *RT || $1 = *DM ]] && fn_prepare_auth
+[[ $1 = *[fuUrmsRD ]] && fn_prepare_auth
 
 # For options that need xmlstarlet
 if [[ $1 = *[rcd] ]] ; then
@@ -499,7 +499,7 @@ case $1 in
 		api=api/statusnet
 		data="$site/$api/groups/timeline.xml?id=$group&count=$max_stats"
 		fn_download ;;
-	*RT) if grep '<feed ' $tmp_file 1>/dev/null ; then
+	*R) if grep '<feed ' $tmp_file 1>/dev/null ; then
 		re1='$' re2=':' # This case is when file returned is Atom
 		else
 			re1='/<user>/' re2='<id>' # This is normal case (e.g., API)
@@ -518,7 +518,7 @@ case $1 in
 
 		curl -f -s -n -X POST -d "source=Qataki" "$site/$api/retweet/$notice_id.xml" 1>/dev/null
 		exit 0 ;;
-	*DM)	to_user=$2 # XXX: FIX URL
+	*M)	to_user=$2 # XXX: FIX URL
 		[[ $to_user = *[!a-zA-Z0-9]* ]] && { echo 'username is alphanum' ; exit 1 ; }
 		[[ -n $3 ]] && dir_msg=$3 || { echo 'Enter a message' ; exit 1 ; }
 		[[ "$site" == *twitter* ]] && unset api
