@@ -448,6 +448,17 @@ trap "mv $HOME/.netrc.$$ $HOME/.netrc 2>/dev/null" EXIT
 # Options that need authentication
 [[ $1 = *[fuUrmsRD] ]] && fn_prepare_auth
 
+fn_paste() {
+	paste_string=$(echo "$msg" | sed 's/[^%]*%%\([^ ]*\).*/\1/')
+	syntax=$(echo $paste_string | sed -n 's/\([^:][^:]\):.*/\1/p') # XXX
+	file=${paste_string#*:}
+	[[ ! -s $file ]] && usage file_miss
+	[[ -n $syntax ]] && extra_paste="-d paste_format=$syntax"
+	paste=$(curl -s $extra_paste --data-urlencode "paste_code@$file" \
+	  http://pastebin.com/api_public.php)
+	msg=$(echo "$msg" | sed "s@\([^%]*\)%%[^ ]*\(.*\)@\1${paste}\2@")
+}
+
 # XXX: 1) Rewrite options parsing. 2) Make $site/$api etc. better.
 case $1 in
 	*f)	if [[ $2 != F && -f $last_file ]] ; then
@@ -458,7 +469,11 @@ case $1 in
 		#data="$site/$api/friends_timeline.xml$data_par"
 		data="$site/$api/home_timeline.xml?$data_par"
 		fn_download && fn_last_status 1 ;;
-	*u)	curl -s -n -d "source=Qataki" --data-urlencode "status=$2" \
+	*u)	msg=$2
+		if echo "$msg" | grep '%%' 1>/dev/null 2>&1 ; then
+			fn_paste
+		fi
+		curl -s -n -d "source=Qataki" --data-urlencode "status=$msg" \
 		  $site/$api/update.xml 1>/dev/null
 		exit 0 ;;
 	*U)	message= ; fn_interactive_update
@@ -493,7 +508,7 @@ case $1 in
 		data="$site/search.atom?rpp=$max_stats"
 		fn_download filter ;;
 	*c) [[ "$site" == *twitter* ]] && usage no_impl
-		# Restrive conversation URL from status id
+		# Retrive conversation URL from status id
 		status_num=$2 tag_cont_re='.'
 		context_id=$(fn_status_info '/status/' '/user/' '<in_reply_to_status_id>')
 		conversation_url=$(curl -L -s $site/notice/$context_id | \
@@ -536,13 +551,6 @@ case $1 in
 	*d)	grep '<verified>' $tmp_file 1>/dev/null || site=$identica # verified -> tw
 		fn_details $2 && exit 0 ;;
 	*k)	fn_configuration ;;
-	paste*) file=$2
-		syntax=$(echo "$1" | awk -F: '{ print $2 }')
-		[[ ! -s $file ]] && usage file_miss
-		[[ -n $syntax ]] && extra_paste="-d paste_format=$syntax"
-		paste=$(curl -s $extra_paste --data-urlencode "paste_code@$file" \
-		  http://pastebin.com/api_public.php)
-		  echo $paste && exit 1 ;;
 	*h|*H)
 		usage ;;
 	*)	data="$site/$api/public_timeline.xml"
