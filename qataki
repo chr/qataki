@@ -427,7 +427,7 @@ fn_prepare_auth() {
 trap "mv $HOME/.netrc.$$ $HOME/.netrc 2>/dev/null" EXIT
 
 # Options that need authentication
-[[ $1 = *[fuUrmsRD ]] && fn_prepare_auth
+[[ $1 = *[fuUrmsRD] ]] && fn_prepare_auth
 
 # For options that need xmlstarlet
 if [[ $1 = *[rcd] ]] ; then
