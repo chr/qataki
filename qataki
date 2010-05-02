@@ -52,35 +52,45 @@ then Identi.ca will be used. It is possible to use only 1 OPTION
 and, eventually, its ARGUMENT. If no option is passed, messages
 from people you follow will be retrived by default.
 
-OPTION    ARGUMENT         RESULT
+OPTION    ARGUMENT           RESULT
 
-          [+]              Retrive messages from people you follow.
-                           If you use the optional "+" argument, all statuses
-                           will be displayed. Otherwise only new statuses.
-p                          Retrive messages from public timeline.
-                           will be displayed. Otherwise only new statuses.
-u         "message"        Update your status with a "message".
-U                          Type a message interactively and update status
-                           (end message with ^D (that is Control-d)).
-m         [+]              Show notices where you are mentioned (@you).
-                           If you use the optional "+" argument, all statuses
-                           will be displayed. Otherwise only new statuses.
-r         <NUMBER>         Reply to message number <NUMBER>.
-c         <NUMBER>         Show conversation relative to notice <NUMBER>.
-n:<NICK>  <OPTION>         Use an alternate nick. This option can be
-                           preceded by [i|t|s:<SITE>] (i by default).
-N         <USER>           Show <USER>'s timeline (last statuses).
-L                          Show previous (last) messages.
-d         <NUMBER>         Show details about notice <NUMBER> (note that
-                           short links will be replaced by real links).
-s:<SITE>  <OPTION>         Use <OPTION> (exept s itself) on <SITE>.
-k                          Configure an account.
-S         "string"         Search messages for "a string".
-R        <NUMBER>          Retweet message number <NUMBER>.
-D        <USER> "message"  Send a direct msg (with text "message") to <USER>.
+          [+]                Retrive messages from people you follow.
+                             If you use the optional "+" argument, all statuses
+                             will be displayed. Otherwise only new statuses.
+p                            Retrive messages from public timeline.
+                             will be displayed. Otherwise only new statuses.
+u         "message"          Update your status with a "message".
+U                            Type a message interactively and update status
+                             (end message with ^D (that is Control-d)).
+m         [+]                Show notices where you are mentioned (@you).
+                             If you use the optional "+" argument, all statuses
+                             will be displayed. Otherwise only new statuses.
+r         <NUMBER> "message" Reply to message number <NUMBER>.
+c         <NUMBER>           Show conversation relative to notice <NUMBER>.
+n:<NICK>  <OPTION>           Use an alternate nick. This option can be
+                             preceded by [i|t|s:<SITE>] (i by default).
+N         <USER>             Show <USER>'s timeline (last statuses).
+L                            Show previous (last) messages.
+d         <NUMBER>           Show details about notice <NUMBER> (note that
+                             short links will be replaced by real links).
+s:<SITE>  <OPTION>           Use <OPTION> (exept s itself) on <SITE>.
+k                            Configure an account.
+S         "string"           Search messages with "string".
+R        <NUMBER>            Retweet message number <NUMBER>.
+D        <USER> "message"    Send a direct msg (with text "message") to <USER>.
 
 NOTES:
 
+"message" is the message/status you want to send. Enclose it in single or
+          double quotes. (Remember to escape them if you use them in your
+          message: "It's \\"my message\\" or 'It\\'s "my message"'.
+          It's possible to include a pastebin link in your message. If you
+          want to upload, for instance, a shell file and inlude it's link in
+          the message include it like "This is my script: %%bash:file.sh". It
+          will be replaced by "This is my script: http://pastebin.com/example".
+          The general "paste string" is %%syntax:file or %%file. In the former
+          case the paste will be highlighted according to syntax. Available
+          syntaxes are shown here: http://pastebin.com/api.php
 <NUMBER>  is the tweet/dent number displayed on the left when you run
           "$(basename $0) [i|t|s<SITE>] [n:<NICK>] [f|N <USER>]".
 <NICK>    is an alternate nickname. You have to pass *alternate* nicknames
