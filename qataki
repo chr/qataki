@@ -6,7 +6,7 @@
 opt_pager='-REX' 	# Options for pager (less)
 max_chars=140		# Max characters on update messages
 max_stats=30		# Max number of statuses to display
-from_string=Qataki  # Change for whaterever you like.
+from_string=Qataki  # Change for whatever you like.
 
 # Not used yet
 qataki_url="&lt;a href='http://chr.tx0.org/qataki' alt='Qataki' title='Qataki'&gt;qataki&lt;/a&gt;"
