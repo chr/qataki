@@ -518,7 +518,7 @@ case $1 in
 			fn_paste
 		fi
 		/usr/bin/env HOME=$conf_dir curl -s -n -d "source=$from_string" \
-		  --data-urlencode "status=$msg" $site/$api/update.xml #1>/dev/null
+		  --data-urlencode "status=$msg" $site/$api/update.xml 1>/dev/null
 		exit 0 ;;
 	*$key_update_window) message= ; fn_interactive_update
 		/usr/bin/env HOME=$conf_dir curl -s -n -d "source=$from_string" \
