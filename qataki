@@ -510,11 +510,12 @@ case $1 in
 	*c) [[ "$site" == *twitter* ]] && usage no_impl
 		# Retrive conversation URL from status id
 		status_num=$2 tag_cont_re='.'
-		context_id=$(fn_status_info '/status/' '/user/' '<in_reply_to_status_id>')
+		context_id=$(fn_status_info '/<status>/' '/<user>/' '<in_reply_to_status_id>')
 		conversation_url=$(curl -L -s $site/notice/$context_id | \
 		  sed -n "/>in context</ { s/[^\"]*\"\([^#]*\).*/\1/ p
 		    }")
 		# Format conversation
+		echo $status_num $context_id $conversation_url
 		fn_conversation "$conversation_url" | fn_format | \
 		sed '/^$/d' | less $opt_pager && exit 0 ;;
 	*g) [[ "$site" == *twitter* ]] && usage no_impl
@@ -529,7 +530,7 @@ case $1 in
 		fi
 
 		status_num=$2 tag_cont_re='.'
-		notice_id=$(fn_status_info '/<status>/' $re1 $re2)
+		notice_id=$(fn_status_info '/<status>/' "$re1" "$re2")
 
 		echo $notice_id && exit 1
 		if [[ "$site" == *twitter* ]] ; then
