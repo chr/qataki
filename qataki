@@ -551,7 +551,7 @@ case $1 in
 		user_name=$(fn_status_info '/<user>/' '/<status>/' '<screen_name>')
 		[[ -n $3 ]] && msg=$3 || { echo 'Message?' ; exit 1 ; }
 		# XXX: @file is recognised by curl. Problems?
-		/usr/bin/env HOME=$conf_dir curl -n -d "source=$from_string" \
+		/usr/bin/env HOME=$conf_dir curl -s -n -d "source=$from_string" \
 		  --data-urlencode "status=@$user_name $msg" \
 		  -d "in_reply_to_status_id=$reply_to" $site/$api/update.xml 1>/dev/null
 		exit 0 ;;
