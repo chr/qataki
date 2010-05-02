@@ -83,7 +83,7 @@ NOTES:
 
 "message" is the message/status you want to send. Enclose it in single or
           double quotes. (Remember to escape them if you use them in your
-          message: "It's \\"my message\\" or 'It\\'s "my message"'.
+          message: "It's \\"my message\\"" or 'It\\'s "my message"'.
           It's possible to include a pastebin link in your message. If you
           want to upload, for instance, a shell file and inlude it's link in
           the message include it like "This is my script: %%bash:file.sh". It
