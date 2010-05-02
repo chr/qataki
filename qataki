@@ -14,10 +14,10 @@ qataki_url="&lt;a href='http://chr.tx0.org/qataki' alt='Qataki' title='Qataki'&g
 usage() {
 case $1 in
 	file_miss)
-		echo "File is either non-existent or its size is 0."
+		echo 'File is either non-existent or its size is 0.'
 		exit 1 ;;
 	empty)
-		echo "Forgot an option?"
+		echo 'Forgot an option?'
 		exit 1 ;;
 	no_alias)
 		echo "Alias is not configured in $conf_file"
@@ -34,6 +34,13 @@ case $1 in
 	no_impl)
 		echo "Not implemented"
 		exit 1 ;;
+	invalid_paste)
+		echo 'Invalid paste string or an invalid file.'
+		echo 'Valid string examples: %%syntax:file or %%file'
+		echo '"syntax" is optional: it is the language of "file" and can'
+		echo 'be one of those listed here: http://pastebin.com/api.php.'
+		echo 'If paste string is OK, then there is something wrong with "file".'
+		exit 1 ;;
 	*)
 		cat <<EOH
 
@@ -42,25 +49,28 @@ $(basename $0) [i|t|s:<SITE>] [n:<NICK>] [<OPTION> [<ARGUMENT>]]
 The first (optional) flag can be: i (identi.ca) OR t (twitter) or
 s:<SITE> (see below). If none of of these three flags are given,
 then Identi.ca will be used. It is possible to use only 1 OPTION
-and, eventually, its ARGUMENT.
+and, eventually, its ARGUMENT. If no option is passed, messages
+from people you follow will be retrived by default.
 
 OPTION    ARGUMENT         RESULT
 
-f         [F]              Retrive messages from people you follow.
-                           If you use the optional "F" argument, all statuses
+          [+]              Retrive messages from people you follow.
+                           If you use the optional "+" argument, all statuses
+                           will be displayed. Otherwise only new statuses.
+p                          Retrive messages from public timeline.
                            will be displayed. Otherwise only new statuses.
 u         "message"        Update your status with a "message".
 U                          Type a message interactively and update status
                            (end message with ^D (that is Control-d)).
-m         [F]              Show notices where you are mentioned (@you).
-                           If you use the optional "F" argument, all statuses
+m         [+]              Show notices where you are mentioned (@you).
+                           If you use the optional "+" argument, all statuses
                            will be displayed. Otherwise only new statuses.
 r         <NUMBER>         Reply to message number <NUMBER>.
 c         <NUMBER>         Show conversation relative to notice <NUMBER>.
 n:<NICK>  <OPTION>         Use an alternate nick. This option can be
                            preceded by [i|t|s:<SITE>] (i by default).
 N         <USER>           Show <USER>'s timeline (last statuses).
-p                          Show previous messages.
+L                          Show previous (last) messages.
 d         <NUMBER>         Show details about notice <NUMBER> (note that
                            short links will be replaced by real links).
 s:<SITE>  <OPTION>         Use <OPTION> (exept s itself) on <SITE>.
@@ -441,13 +451,6 @@ fn_status_info() {
 	}" $tmp_file | sed -n "$status_num s@.*$tag_o\($tag_cont_re*\)$tag_c@\1@p"
 }
 
-# For auth we will generate a new .netrc site, after moving the old one.
-# When the scripts exits, restore .netrc (a sane umask was already set):
-trap "mv $HOME/.netrc.$$ $HOME/.netrc 2>/dev/null" EXIT
-
-# Options that need authentication
-[[ $1 = *[fuUrmsRD] ]] && fn_prepare_auth
-
 fn_paste() {
 	paste_string=$(echo "$msg" | sed 's/[^%]*%%\([^ ]*\).*/\1/')
 	syntax=$(echo $paste_string | sed -n 's/\([^:][^:]\):.*/\1/p') # XXX
@@ -456,23 +459,30 @@ fn_paste() {
 	[[ -n $syntax ]] && extra_paste="-d paste_format=$syntax"
 	paste=$(curl -s $extra_paste --data-urlencode "paste_code@$file" \
 	  http://pastebin.com/api_public.php)
-	msg=$(echo "$msg" | sed "s@\([^%]*\)%%[^ ]*\(.*\)@\1${paste}\2@")
+	if echo "$paste" | grep ' ' 1>/dev/null 2>&1 ; then
+		usage invalid_paste
+	else
+		msg=$(echo "$msg" | sed "s@\([^%]*\)%%[^ ]*\(.*\)@\1${paste}\2@")
+	fi
 }
+
+# For auth we will generate a new .netrc site, after moving the old one.
+# When the scripts exits, restore .netrc (a sane umask was already set):
+trap "mv $HOME/.netrc.$$ $HOME/.netrc 2>/dev/null" EXIT
+
+# Options that need authentication
+[[ $1 = *[fuUrmsRD] ]] && fn_prepare_auth
+
 
 # XXX: 1) Rewrite options parsing. 2) Make $site/$api etc. better.
 case $1 in
-	*f)	if [[ $2 != F && -f $last_file ]] ; then
-			last_stat=$(sed -n "1p" $last_file)
-			[[ $last_stat = *[0-9]* ]] || last_stat=1
-		fi
-		data_par="since_id=${last_stat}&count=$max_stats"
-		#data="$site/$api/friends_timeline.xml$data_par"
-		data="$site/$api/home_timeline.xml?$data_par"
-		fn_download && fn_last_status 1 ;;
+	*p)	data="$site/$api/public_timeline.xml"
+		fn_download ;;
 	*u)	msg=$2
 		if echo "$msg" | grep '%%' 1>/dev/null 2>&1 ; then
 			fn_paste
 		fi
+		echo $msg && exit 1
 		curl -s -n -d "source=Qataki" --data-urlencode "status=$msg" \
 		  $site/$api/update.xml 1>/dev/null
 		exit 0 ;;
@@ -480,7 +490,7 @@ case $1 in
 		curl -s -n -d "source=Qataki" --data-urlencode "status=$message" \
 		  $site/$api/update.xml 1>/dev/null
 		exit 0 ;;
-	*m)	if [[ $2 != F && -f $last_file ]] ; then
+	*m)	if [[ $2 != '+' && -f $last_file ]] ; then
 			last_stat=$(sed -n "2p" $last_file)
 			[[ $last_stat = *[0-9]* ]] || last_stat=1
 		fi
@@ -551,10 +561,16 @@ case $1 in
 	*d)	grep '<verified>' $tmp_file 1>/dev/null || site=$identica # verified -> tw
 		fn_details $2 && exit 0 ;;
 	*k)	fn_configuration ;;
-	*h|*H)
-		usage ;;
-	*)	data="$site/$api/public_timeline.xml"
-		[[ "$1" != *p ]] && fn_download ;;
+	*h|*H) usage ;;
+	*L) : ;; # Do nothing: Messages are already in $tmp_file
+	*)	if [[ $1 != '+' && -f $last_file ]] ; then
+			last_stat=$(sed -n "1p" $last_file)
+			[[ $last_stat = *[0-9]* ]] || last_stat=1
+		fi
+		data_par="since_id=${last_stat}&count=$max_stats"
+		#data="$site/$api/friends_timeline.xml$data_par"
+		data="$site/$api/home_timeline.xml?$data_par"
+		fn_download && fn_last_status 1 ;;
 esac
 
 fn_extract | fn_ol_list | fn_format | less $opt_pager
