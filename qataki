@@ -25,9 +25,6 @@ case $1 in
 	no_both)
 		echo "Can't have both"
 		exit 1 ;;
-	no_exe)
-		echo "$2 is not installed on your system"
-		exit 1 ;;
 	no_auth)
 		echo "Have you set up $conf_file correctly? Try \"$(basename $0) k\""
 		exit 1 ;;
@@ -137,7 +134,7 @@ NOTES:
           ALIAS short.
 
 Authorisation is handled by curl with it's "-n" option. This means that a
-.netrc file (located in \$HOME) is used. Qataki generates .netrc dinamically
+.netrc file (located in \$conf_dir) is used. Qataki generates .netrc dinamically
 when it's run (a 0077 umask is used). When it exits .netrc is restored.
 
 When you run qataki with the "k" option, you can add your username and password

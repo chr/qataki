@@ -1,6 +1,11 @@
-0.03	XXXX
+0.03	2010-05-02
 
-	* Options one letter
+	* Added pastebin feature.
+	* Removed xmlstarlet dependency.
+	* Options are now all one letter and configurable in $conf_dir.
+	* Changed default option: now friends timeline is downloaded.
+	* curl is now called by /usr/bin/env that sets HOME in $conf_dir.
+	* Updated help output.
 
 0.02	2010-04-02
 
