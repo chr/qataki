@@ -515,7 +515,6 @@ case $1 in
 		  sed -n "/>in context</ { s/[^\"]*\"\([^#]*\).*/\1/ p
 		    }")
 		# Format conversation
-		echo $status_num $context_id $conversation_url
 		fn_conversation "$conversation_url" | fn_format | \
 		sed '/^$/d' | less $opt_pager && exit 0 ;;
 	*g) [[ "$site" == *twitter* ]] && usage no_impl
