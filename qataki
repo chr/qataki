@@ -3,10 +3,10 @@
 # Qataki is free and unencumbered public domain software. For more
 # information see http://unlicense.org/ or the accompanying UNLICENSE file.
 
-
 opt_pager='-REX' 	# Options for pager (less)
 max_chars=140		# Max characters on update messages
 max_stats=30		# Max number of statuses to display
+from_string=Qataki  # Change for whaterever you like.
 
 # Not used yet
 qataki_url="&lt;a href='http://chr.tx0.org/qataki' alt='Qataki' title='Qataki'&gt;qataki&lt;/a&gt;"
@@ -51,6 +51,8 @@ s:<SITE> (see below). If none of of these three flags are given,
 then Identi.ca will be used. It is possible to use only 1 OPTION
 and, eventually, its ARGUMENT. If no option is passed, messages
 from people you follow will be retrived by default.
+Options have a default value, but it is possible to modify defaults
+by adding/changing key_*=OPTION in $conf_file.
 
 OPTION    ARGUMENT           RESULT
 
@@ -58,26 +60,42 @@ OPTION    ARGUMENT           RESULT
                              If you use the optional "+" argument, all statuses
                              will be displayed. Otherwise only new statuses.
 p                            Retrive messages from public timeline.
-                             will be displayed. Otherwise only new statuses.
+                             key_public=p
+g         <GROUP>            Retrive messages from <GROUP timeline.
+                             key_group=g
 u         "message"          Update your status with a "message".
+                             key_update=u
 U                            Type a message interactively and update status
                              (end message with ^D (that is Control-d)).
+                             key_update_window=U
 m         [+]                Show notices where you are mentioned (@you).
                              If you use the optional "+" argument, all statuses
                              will be displayed. Otherwise only new statuses.
+                             key_mentions=m
 r         <NUMBER> "message" Reply to message number <NUMBER>.
+                             key_reply=r
 c         <NUMBER>           Show conversation relative to notice <NUMBER>.
+                             key_context=c
 n:<NICK>  <OPTION>           Use an alternate nick. This option can be
                              preceded by [i|t|s:<SITE>] (i by default).
+                             key_alt_nick=n
 N         <USER>             Show <USER>'s timeline (last statuses).
+                             key_user=N
 L                            Show previous (last) messages.
+                             key_last=L
 d         <NUMBER>           Show details about notice <NUMBER> (note that
                              short links will be replaced by real links).
+                             key_details=d
 s:<SITE>  <OPTION>           Use <OPTION> (exept s itself) on <SITE>.
+                             key_sn_site=s
 k                            Configure an account.
+                             key_configure=k
 S         "string"           Search messages with "string".
+                             key_search=S
 R        <NUMBER>            Retweet message number <NUMBER>.
-D        <USER> "message"    Send a direct msg (with text "message") to <USER>.
+                             key_resend=R
+M        <USER> "message"    Send a direct msg (with text "message") to <USER>.
+                             key_dir_msg_send=M
 
 NOTES:
 
@@ -93,6 +111,7 @@ NOTES:
           syntaxes are shown here: http://pastebin.com/api.php
 <NUMBER>  is the tweet/dent number displayed on the left when you run
           "$(basename $0) [i|t|s<SITE>] [n:<NICK>] [f|N <USER>]".
+<GROUP>   is the name of a Identi.ca/StatusNet group.
 <NICK>    is an alternate nickname. You have to pass *alternate* nicknames
           on the command line as n:<NICK>. On the contrary, you don't have
           to specify your *default* nickname. For this, your default nick
@@ -225,10 +244,21 @@ fn_configuration() {
 [[ ! -f $tmp_file ]] && > $tmp_file
 [[ ! -f $conf_file ]] && > $conf_file && fn_configuration
 
+
+# Default options. Can be changed in $conf_file
+key_public=p key_update=u key_update_window=U key_mentions=m key_reply=r
+key_user=N key_search=S key_context=c key_group=g key_resend=R key_details=d
+key_dir_msg_send=M key_configure=k key_help=h key_Help=H key_last=L
+key_alt_nick=n key_sn_site=s
+
+for i in $(grep ^key_ $HOME/.qataki/qataki.conf) ; do
+	eval $i
+done
+
 site=$identica api=api/statuses last_file=$cache_dir/last.dent
 [[ $1 = i ]] && shift
 
-if [[ $1 = n:* ]] ; then
+if [[ $1 = $key_alt_nick:* ]] ; then
 	my_nick=$1 my_nick=${my_nick/n:}
 	last_file=$last_file.$my_nick
 	shift
@@ -238,7 +268,7 @@ fi
 
 if [[ $1 = t ]] ; then
 	site=$twitter api=statuses last_file=$cache_dir/last.tweet
-	if [[ $2 = n:* ]] ; then
+	if [[ $2 = $key_alt_nick:* ]] ; then
 		my_nick=$2 my_nick=${my_nick/n:}
 		last_file=$last_file.$my_nick
 		shift
@@ -248,7 +278,7 @@ if [[ $1 = t ]] ; then
 	shift
 fi
 
-if [[ $1 = s:* ]] ; then
+if [[ $1 = $key_sn_site:* ]] ; then
 	# Identi.ca is not present inside [[ ]] as it's the default value
 	# and will be overwritten anyway is "s:..." is specified
 	[[ $site = *twitter* ]] && usage no_both
@@ -257,7 +287,7 @@ if [[ $1 = s:* ]] ; then
 		usage empty
 	else
 		[[ ! $(grep "site $site_alias " $conf_file) ]] && usage no_alias
-		if [[ $2 = n:* ]] ; then
+		if [[ $2 = $key_alt_nick:* ]] ; then
 			my_nick=$2 my_nick=${my_nick/n:}
 			last_file=$last_file.$my_nick
 			shift
@@ -298,9 +328,9 @@ col_bang='[1;31;40m'
 # When local function's $1 is 'filter', more passages are needed
 fn_download() {
 	{ if [[ "$1" != filter ]] ; then
-		curl -f -s -n "$data" > $tmp_file
+		/usr/bin/env HOME=$conf_dir curl -f -s -n "$data" > $tmp_file
 	else
-		curl -f -s -n --data-urlencode "q=$string" "$data" | \
+		/usr/bin/env HOME=$conf_dir curl -f -s -n --data-urlencode "q=$string" "$data" | \
 		  sed '1,/<status>/ { /Search/d ; };
 		  s@<\(/*\)title>@<\1text>@g;s@<\(/*\)entry>@<\1status>@g;
 		  s@<name>\([^< ][^< ]*\).*</name>@<screen_name>\1</screen_name>@' \
@@ -442,16 +472,14 @@ fn_interactive_update() {
 }
 
 fn_prepare_auth() {
-	[[ ! -f $HOME/.netrc ]] && > $HOME/.netrc
-	cp $HOME/.netrc $HOME/.netrc.$$
-
 	site_name=${site/*:\/\/}
 
 	# \(api.\)\?... matches api.twitter.com
-	grep "machine \(api.\)\?$site_name login $my_nick" $conf_file > $HOME/.netrc
+	grep "machine \(api.\)\?$site_name login $my_nick" $conf_file \
+	  > $conf_dir/.netrc
 
 	# Check that site (without http[s]://) is in .netrc
-	[[ ! $(grep $site_name $HOME/.netrc) ]] && usage no_auth
+	[[ ! $(grep $site_name $conf_dir/.netrc) ]] && usage no_auth
 }
 
 fn_status_info() {
@@ -481,44 +509,47 @@ fn_paste() {
 trap "mv $HOME/.netrc.$$ $HOME/.netrc 2>/dev/null" EXIT
 
 # Options that need authentication
-[[ $1 = *[fuUrmsRD] ]] && fn_prepare_auth
-
+[[ $1 = *[$key_update$key_update_w$key_reply$key_mentions] ]] && fn_prepare_auth
+[[ $1 = *[$key_sn$key_resend$key_dir_msg_send] ]] && fn_prepare_auth
 
 # XXX: 1) Rewrite options parsing. 2) Make $site/$api etc. better.
 case $1 in
-	*p)	data="$site/$api/public_timeline.xml?count=$max_stats"
+	*$key_public)	data="$site/$api/public_timeline.xml?count=$max_stats"
 		fn_download ;;
-	*u)	msg=$2
+	*$key_update) msg=$2
 		if echo "$msg" | grep '%%' 1>/dev/null 2>&1 ; then
 			fn_paste
 		fi
-		curl -s -n -d "source=Qataki" --data-urlencode "status=$msg" \
-		  $site/$api/update.xml 1>/dev/null
+		/usr/bin/env HOME=$conf_dir curl -s -n -d "source=$from_string" \
+		  --data-urlencode "status=$msg" $site/$api/update.xml #1>/dev/null
 		exit 0 ;;
-	*U)	message= ; fn_interactive_update
-		curl -s -n -d "source=Qataki" --data-urlencode "status=$message" \
-		  $site/$api/update.xml 1>/dev/null
+	*$key_update_window) message= ; fn_interactive_update
+		/usr/bin/env HOME=$conf_dir curl -s -n -d "source=$from_string" \
+		  --data-urlencode "status=$message" $site/$api/update.xml 1>/dev/null
 		exit 0 ;;
-	*m)	if [[ $2 != '+' && -f $last_file ]] ; then
+	*$key_mentions)	if [[ $2 != '+' && -f $last_file ]] ; then
 			last_stat=$(sed -n "2p" $last_file)
 			[[ $last_stat = *[0-9]* ]] || last_stat=1
 		fi
 		data_par="since_id=${last_stat}&count=$max_stats"
 		data="$site/$api/mentions.xml?$data_par"
 		fn_download && fn_last_status 2 ;;
-	*r)	[[ -z $2 || $2 = *[!0-9]* ]] && { echo 'Select a number' && exit 1 ; }
+	*$key_reply)
+		[[ -z $2 || $2 = *[!0-9]* ]] && { echo 'Select a number' && exit 1 ; }
 		status_num=$2 tag_cont_re='.'
 		reply_to=$(fn_status_info '/<status>/' '/<user>/' '<id>')
 		user_name=$(fn_status_info '/<user>/' '/<status>/' '<screen_name>')
 		[[ -n $3 ]] && msg=$3 || { echo 'Message?' ; exit 1 ; }
-		curl -s -n -d "source=Qataki" --data-urlencode "status=@$user_name $msg" \
+		/usr/bin/env HOME=$conf_dir curl -s -n -d "source=$from_string" \
+		  --data-urlencode "status=@$user_name $msg" \
 		  -d "in_reply_to_status_id=$reply_to" $site/$api/update.xml 1>/dev/null
 		exit 0 ;;
-	*N) [[ "$site" == *twitter* ]] && site=http://api.twitter.com/1
+	*$key_user) [[ "$site" == *twitter* ]] && site=http://api.twitter.com/1
 		nick=$2
 		data="$site/$api/user_timeline.xml?screen_name=${nick}&count=$max_stats"
 		fn_download ;;
-	*S)	if [[ "$site" == *twitter* ]] ; then
+	*$key_search)
+		if [[ "$site" == *twitter* ]] ; then
 			site=http://search.twitter.com
 		else
 			site=$identica/api
@@ -526,7 +557,7 @@ case $1 in
 		string=$2
 		data="$site/search.atom?rpp=$max_stats"
 		fn_download filter ;;
-	*c) [[ "$site" == *twitter* ]] && usage no_impl
+	*$key_context) [[ "$site" == *twitter* ]] && usage no_impl
 		# Retrive conversation URL from status id
 		status_num=$2 tag_cont_re='.'
 		context_id=$(fn_status_info '/<status>/' '/<user>/' '<in_reply_to_status_id>')
@@ -536,12 +567,12 @@ case $1 in
 		# Format conversation
 		fn_conversation "$conversation_url" | fn_format | \
 		sed '/^$/d' | less $opt_pager && exit 0 ;;
-	*g) [[ "$site" == *twitter* ]] && usage no_impl
+	*$key_group) [[ "$site" == *twitter* ]] && usage no_impl
 		group=$2
 		api=api/statusnet
 		data="$site/$api/groups/timeline.xml?id=$group&count=$max_stats"
 		fn_download ;;
-	*R) if grep '<feed ' $tmp_file 1>/dev/null ; then
+	*$key_resend) if grep '<feed ' $tmp_file 1>/dev/null ; then
 		re1='$' re2=':' # This case is when file returned is Atom
 		else
 			re1='/<user>/' re2='<id>' # This is normal case (e.g., API)
@@ -557,22 +588,27 @@ case $1 in
 			site=$identica
 		fi
 
-		curl -f -s -n -X POST -d "source=Qataki" "$site/$api/retweet/$notice_id.xml" 1>/dev/null
+		/usr/bin/env HOME=$conf_dir curl -f -s -n -X POST \
+		  -d "source=$from_string" \
+		  "$site/$api/retweet/$notice_id.xml" 1>/dev/null
 		exit 0 ;;
-	*M)	to_user=$2 # XXX: FIX URL
+	*$key_dir_msg_send) to_user=$2 # XXX: FIX URL
 		[[ $to_user = *[!a-zA-Z0-9]* ]] && { echo 'username is alphanum' ; exit 1 ; }
 		[[ -n $3 ]] && dir_msg=$3 || { echo 'Enter a message' ; exit 1 ; }
 		[[ "$site" == *twitter* ]] && unset api
-		curl -n -X POST -d "source=Qataki" --data-urlencode "user=$to_user" --data-urlencode "text=$dir_msg" \
+		/usr/bin/env HOME=$conf_dir curl -n -X POST -d "source=$from_string" \
+		  --data-urlencode "user=$to_user" --data-urlencode "text=$dir_msg" \
 		  "$site/api/direct_messages/new.xml" 1>/dev/null
 		echo "$site/api/direct_messages/new.xml"
 		exit 0 ;;
-	*d)	grep '<verified>' $tmp_file 1>/dev/null || site=$identica # verified -> tw
+	*$key_details)
+		grep '<verified>' $tmp_file 1>/dev/null || site=$identica # verif -> tw
 		fn_details $2 && exit 0 ;;
-	*k)	fn_configuration ;;
-	*h|*H) usage ;;
-	*L) : ;; # Do nothing: Messages are already in $tmp_file
-	*)	if [[ $1 != '+' && -f $last_file ]] ; then
+	*$key_configure)	fn_configuration ;;
+	*$key_help|*$key_Help) usage ;;
+	*$key_last) : ;; # Do nothing: Messages are already in $tmp_file
+	*)	fn_prepare_auth # This is because there's no $1 (unless it's a '+')
+		if [[ $1 != '+' && -f $last_file ]] ; then
 			last_stat=$(sed -n "1p" $last_file)
 			[[ $last_stat = *[0-9]* ]] || last_stat=1
 		fi
