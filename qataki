@@ -486,7 +486,7 @@ trap "mv $HOME/.netrc.$$ $HOME/.netrc 2>/dev/null" EXIT
 
 # XXX: 1) Rewrite options parsing. 2) Make $site/$api etc. better.
 case $1 in
-	*p)	data="$site/$api/public_timeline.xml"
+	*p)	data="$site/$api/public_timeline.xml?count=$max_stats"
 		fn_download ;;
 	*u)	msg=$2
 		if echo "$msg" | grep '%%' 1>/dev/null 2>&1 ; then
