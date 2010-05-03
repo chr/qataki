@@ -263,6 +263,7 @@ key_public=p key_update=u key_update_w=U key_mentions=m key_reply=r
 key_user=N key_search=S key_context=c key_group=g key_resend=R key_details=d
 key_dir_msg_send=M key_configure=k key_help=h key_Help=H key_last=L
 key_alt_nick=n key_sn=s key_follow=f key_unfollow=F key_join=j key_unjoin=J
+key_delete=D
 
 for i in $(grep ^key_ $HOME/.qataki/qataki.conf) ; do
 	eval $i
@@ -497,8 +498,10 @@ fn_prepare_auth() {
 
 fn_status_info() {
 	delim_1="$1" delim_2="$2" tag_o="$3" tag_c="</${tag_o#<}"
-	sed -n "$delim_1,$delim_2 {
+	sed -n "/<retweeted_status>/,/<\/retweeted_status>/ !{
+	$delim_1,$delim_2 {
 	  /$tag_o/ p
+	}
 	}" $tmp_file | sed -n "$status_num s@.*$tag_o\($tag_cont_re*\)$tag_c@\1@p"
 }
 
@@ -523,7 +526,7 @@ trap "mv $HOME/.netrc.$$ $HOME/.netrc 2>/dev/null" EXIT
 
 # Options that need authentication
 [[ $1 = *[$key_update$key_update_w$key_reply$key_mentions] ]] && fn_prepare_auth
-[[ $1 = *[$key_sn$key_resend$key_dir_msg_send] ]] && fn_prepare_auth
+[[ $1 = *[$key_sn$key_resend$key_dir_msg_send$key_delete] ]] && fn_prepare_auth
 [[ $1 = *[$key_follow$key_unfollow$key_join$key_unjoin] ]] && fn_prepare_auth
 
 # XXX: 1) Rewrite options parsing. 2) Make $site/$api etc. better.
@@ -596,7 +599,8 @@ case $1 in
 			/usr/bin/env HOME=$conf_dir curl -X POST -f -s -n "$data" \
 			  1>/dev/null && exit 0
 		fi ;;
-	*$key_resend) if grep '<feed ' $tmp_file 1>/dev/null ; then
+	*$key_resend|*$key_delete)
+		if grep '<feed ' $tmp_file 1>/dev/null ; then
 		re1='$' re2=':' # This case is when file returned is Atom
 		else
 			re1='/<user>/' re2='<id>' # This is normal case (e.g., API)
@@ -612,9 +616,10 @@ case $1 in
 			site=$identica
 		fi
 
+		[[ $1 = *$key_resend ]] && kind=retweet || kind=destroy
 		/usr/bin/env HOME=$conf_dir curl -f -s -n -X POST \
 		  -d "source=$from_string" \
-		  "$site/$api/retweet/$notice_id.xml" 1>/dev/null
+		  "$site/$api/$kind/$notice_id.xml" 1>/dev/null
 		exit 0 ;;
 	*$key_dir_msg_send) to_user=$2 # XXX: FIX URL
 		[[ $to_user = *[!a-zA-Z0-9]* ]] && { echo 'username is alphanum' ; exit 1 ; }
