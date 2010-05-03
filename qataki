@@ -577,12 +577,12 @@ case $1 in
 		# Retrive conversation URL from status id
 		status_num=$2 tag_cont_re='.'
 		context_id=$(fn_status_info '/<status>/' '/<user>/' '<in_reply_to_status_id>')
-		conversation_url=$(curl -L -s $site/notice/$context_id | \
+		conversation_url=$(curl -L -s "$site/notice/$context_id" | \
 		  sed -n "/>in context</ { s/[^\"]*\"\([^#]*\).*/\1/ p
 		    }")
 		# Format conversation
 		fn_conversation "$conversation_url" | fn_format | \
-		sed '/^$/d' | less $opt_pager && exit 0 ;;
+		  sed '/^$/d' | less $opt_pager && exit 0 ;;
 	*$key_group|*$key_join|*$key_unjoin)
 		[[ "$site" == *twitter* ]] && usage no_impl
 		group=$2
@@ -605,7 +605,6 @@ case $1 in
 		status_num=$2 tag_cont_re='.'
 		notice_id=$(fn_status_info '/<status>/' "$re1" "$re2")
 
-		echo $notice_id && exit 1
 		if [[ "$site" == *twitter* ]] ; then
 			site=http://api.twitter.com/1
 		else
@@ -651,6 +650,10 @@ case $1 in
 		data="$site/$api/$kind.xml?$data_par"
 		/usr/bin/env HOME=$conf_dir curl -X POST -f -s -n "$data" 1>/dev/null
 		exit 1 ;;
+	# TODO BLOCK/FLAG ??
+	#b)
+	#	curl -n -d "screen_name=$2" http://identi.ca/api/report_spam.xml
+	#	exit 0 ;;
 	*)	fn_prepare_auth # This is because there's no $1 (unless it's a '+')
 		if [[ $1 != '+' && -f $last_file ]] ; then
 			last_stat=$(sed -n "1p" $last_file)
