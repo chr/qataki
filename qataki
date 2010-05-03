@@ -481,8 +481,10 @@ fn_prepare_auth() {
 
 fn_status_info() {
 	delim_1="$1" delim_2="$2" tag_o="$3" tag_c="</${tag_o#<}"
-	sed -n "$delim_1,$delim_2 {
+	sed -n "/<retweeted_status>/,/<\/retweeted_status>/ !{
+	$delim_1,$delim_2 {
 	  /$tag_o/ p
+	}
 	}" $tmp_file | sed -n "$status_num s@.*$tag_o\($tag_cont_re*\)$tag_c@\1@p"
 }
 
