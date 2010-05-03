@@ -578,7 +578,6 @@ case $1 in
 		status_num=$2 tag_cont_re='.'
 		notice_id=$(fn_status_info '/<status>/' "$re1" "$re2")
 
-		echo $notice_id && exit 1
 		if [[ "$site" == *twitter* ]] ; then
 			site=http://api.twitter.com/1
 		else
