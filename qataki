@@ -333,6 +333,7 @@ chars='a-zA-Z0-9_-'
 
 # Embed colour sequences
 col_emph='[1;33;40m'
+col_foll='[0;30;43m'
 col_norm='[0m'
 col_link='[1;36;40m'
 col_at='[1;35;40m'
@@ -364,20 +365,24 @@ s@\(>*\)\([^<>]*\)\(<*\)@\1\
 \2\
 \3@g
 }' $tmp_file | sed '/^$/d;/[<>]/d' | \
-awk ' /^(screen_name)|(text)|(in_reply_to_screen_name)$/,/^(\/screen_name)|(\/text)|(\/in_reply_to_screen_name)$/ {
+awk ' /^(screen_name)|(text)|(in_reply_to_screen_name)|(following)$/,/^(\/screen_name)|(\/text)|(\/in_reply_to_screen_name)|(\/following)$/ {
 if ( $1 ~ /^screen_name$/ ) { sn=1 ; next }
+if ( $1 ~ /^following$/ ) { foll=1 ;  next }
 if ( $1 ~ /^text$/ ) { txt=1 ; next }
 if ( $1 ~ /^in_reply_to_screen_name$/ ) { rep=1 ; next }
 if ( $1 ~ /^\/screen_name$/ ) { sn=0 ; next }
 if ( $1 ~ /^\/text$/ ) { txt=0 ;  next }
 if ( $1 ~ /^\/in_reply_to_screen_name$/ ) { rep=0; next }
+if ( $1 ~ /^\/following$/ ) { foll=0 ; next }
 if ( sn == 1 ) { sn_content=sn_content $0 }
 if ( txt == 1 ) { txt_content=txt_content $0 }
 if ( rep == 1 ) { rep_content=rep_content $0 }
+if ( foll == 1 ) { foll_mark=$0 }
 }
 /^\/status$/ {
 if (rep_content) { txt_content=txt_content " {context}" }
-print "*" sn_content "*: " txt_content
+if (foll_mark=="true") { foll_mark="###" } else { foll_mark="" }
+print "*" foll_mark sn_content "*: " txt_content
 txt_content=""; sn_content=""; rep_content=""
 }'
 }
@@ -400,11 +405,12 @@ fn_ol_list() {
 # Links are searched in a way that http, ftp and gopher are valid links.
 fn_format() {
 	eval $render | \
-	sed "s/^\([^1-9]*[1-9][0-9]*\.[^\*]*\)\*\([^ ][^ ]*\)\*:/\1$col_emph\2$col_norm:/;\
-	     s@\([fgh][a-zA-Z]*://[^ ][^ ]*[a-zA-Z0-9/]\)@$col_link\1$col_norm@g;\
-		 s/\(@[$chars][$chars]*\)/$col_at\1$col_norm/g;\
-		 s/\(#[$chars][$chars]*\)/$col_hash\1$col_norm/g;\
-		 s/\(![$chars][$chars]*\)/$col_bang\1$col_norm/g"
+	sed "s/^\([^1-9]*[1-9][0-9]*\.[^\*]*\)\*###\([^ ][^ ]*\)\*:/\1$col_foll\2$col_norm:/;\
+	  s/^\([^1-9]*[1-9][0-9]*\.[^\*]*\)\*\([^ ][^ ]*\)\*:/\1$col_emph\2$col_norm:/;\
+	  s@\([fgh][a-zA-Z]*://[^ ][^ ]*[a-zA-Z0-9/]\)@$col_link\1$col_norm@g;\
+	  s/\(@[$chars][$chars]*\)/$col_at\1$col_norm/g;\
+	  s/\(#[$chars][$chars]*\)/$col_hash\1$col_norm/g;\
+	  s/\(![$chars][$chars]*\)/$col_bang\1$col_norm/g"
 }
 
 fn_details() {
