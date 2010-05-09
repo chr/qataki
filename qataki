@@ -31,6 +31,9 @@ case $1 in
 	no_impl)
 		echo "Not implemented"
 		exit 1 ;;
+	number)
+		echo "That option needs a number <= $max_stats"
+		exit 1 ;;
 	invalid_paste)
 		echo 'Invalid paste string or an invalid file.'
 		echo 'Valid string examples: %%syntax:file or %%file'
@@ -263,7 +266,7 @@ key_public=p key_update=u key_update_w=U key_mentions=m key_reply=r
 key_user=N key_search=S key_context=c key_group=g key_resend=R key_details=d
 key_dir_msg_send=M key_configure=k key_help=h key_Help=H key_prev=L
 key_alt_nick=n key_sn=s key_follow=f key_unfollow=F key_join=j key_unjoin=J
-key_delete=D key_like=l
+key_delete=D key_like=l key_open=o
 
 for i in $(grep ^key_ $HOME/.qataki/qataki.conf) ; do
 	eval $i
@@ -322,8 +325,10 @@ cols=$(( $(tput cols) - 2 ))
 [[ $cols -le 10 ]] && cols=78 # If 'tput cols' fails
 
 if which elinks 1>/dev/null ; then
+	browser=${BROWSER:-elinks}
 	render="elinks -dump -dump-width $cols -eval 'set document.browse.margin_width = 1' -force-html -no-numbering -no-references"
 else
+	browser=${BROWSER:-lynx}
 	# There's a -nomargins option, but it's less readable
 	render="lynx -dump -width $cols -force_html -stdin -display_charset=utf-8"
 fi
@@ -342,6 +347,7 @@ col_bang='[1;31;40m'
 
 # When local function's $1 is 'filter', more passages are needed
 fn_download() {
+	/usr/bin/env HOME=$conf_dir curl -f -s -n --data-urlencode "q=$string" "$data"
 	{ if [[ "$1" != filter ]] ; then
 		/usr/bin/env HOME=$conf_dir curl -f -s -n "$data" > $tmp_file
 	else
@@ -448,6 +454,15 @@ sed "$1 c\\
 $last
 " $last_file > $last_file.tmp
 mv $last_file.tmp $last_file
+}
+
+# Prints URLs. XXX: gopher? ftp?
+fn_url() {
+	awk '{
+	url_re = "https?://"
+	for (i=1; i<=NF; i++) {
+			if (match($i, url_re)) { print $i }
+	}}'
 }
 
 # This will output HTTP header field "Location".
@@ -664,15 +679,33 @@ case $1 in
 		data="$site/$api/$kind.xml?$data_par"
 		/usr/bin/env HOME=$conf_dir curl -X POST -f -s -n "$data" 1>/dev/null
 		exit 1 ;;
+	*$key_open)
+		if [[ $2 != *[a-zA-Z]* && $2 -le $max_stats ]] ; then
+			status_num=$2 tag_cont_re='.'
+			# If there's a NL it won't take all the text.
+			text=$(fn_status_info '/<status>/' '/<user>/' '<text>')
+		else
+			usage number
+		fi
+
+		url=$(echo $text | fn_url)
+
+		if echo $url | grep ' ' 1>/dev/null 2>&1 ; then
+			select i in $url ; do
+				url=$i && break
+			done
+		fi
+
+		[[ -z $url ]] && echo 'No URL' || eval $browser $url
+		exit 1;;
 	# TODO BLOCK/FLAG ??
 	#b)
 	#	curl -n -d "screen_name=$2" http://identi.ca/api/report_spam.xml
 	#	exit 0 ;;
 	*)	fn_prepare_auth # This is because there's no $1 (unless it's a '+')
-		if [[ $1 != '+' && -f $last_file ]] ; then
-			last_stat=$(sed -n "1p" $last_file)
-			[[ $last_stat = *[0-9]* ]] || last_stat=1
-		fi
+		last_stat=1
+		[[ $1 != '+' && -f $last_file ]] && last_stat=$(sed -n "1p" $last_file)
+
 		data_par="since_id=${last_stat}&count=$max_stats"
 		#data="$site/$api/friends_timeline.xml$data_par"
 		data="$site/$api/home_timeline.xml?$data_par"
