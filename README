@@ -11,10 +11,12 @@ features.  However, if you feel that something useful
 lacks, contact me (@chr identica) or play yourself with
 the code!
 
+Qataki's website: http://chr.tx0.org/qataki
+
 By default Identi.ca and Twitter support is enabled. You
 can use a StatusNet site by creating an alias in a
 configuration file. More info here:
-http://chr.tx0.org/qataki/#StatusNet
+http://chr.tx0.org/qataki/documentation#StatusNet
 
 It has been tested with bash (used by default) and ksh93,
 on NetBSD and Debian.
@@ -27,7 +29,7 @@ DEPENDENCIES
 ------------
 
 You'll need usual UNIX utilities like sed/awk/grep.
-You'll also need curl,[1] and elinks[2].
+You'll also need cURL,[1] and ELinks[2].
 
 
 INSTALLATION
@@ -56,13 +58,13 @@ machine identi.ca login YOU password SECRET
 Where YOU is your username on identi.ca and SECRET is your
 password there.
 
-Read "qataki -h for help.
+Read "qataki h" for help.
 
 
 
 [1] http://curl.haxx.se/
 
 [2] http://elinks.or.cz/ . This is not, however a "hard"
-dependency. If Elinks is not installed on your system,
+dependency. If ELinks is not installed on your system,
 Lynx will be used. In this latter case, you'll have
 problems with accented letters and non-latin alphabet.
