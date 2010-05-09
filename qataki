@@ -106,6 +106,12 @@ $key_join         <GROUP>            Join <GROUP>.
                              key_join=j
 $key_unjoin         <GROUP>            Unjoin <GROUP>.
                              key_unjoin=J
+a         <NUMBER>           Add notice <NUMBER> to favorites list.
+                             key_like=a
+o         <NUMBER>           Open a link present in notice <NUMBER> in your
+                             \$BROWSER. If more than 1 link is present, a menu
+                             to choose from will be displayed.
+                             key_open=o
 
 
 NOTES:
@@ -121,7 +127,7 @@ NOTES:
           case the paste will be highlighted according to syntax. Available
           syntaxes are shown here: http://pastebin.com/api.php
 <NUMBER>  is the tweet/dent number displayed on the left when you run
-          "$(basename $0) [i|t|s<SITE>] [n:<NICK>] [f|N <USER>]".
+          "$(basename $0) [i|t|s<SITE>] [n:<NICK>] [N <USER>]".
 <GROUP>   is the name of a Identi.ca/StatusNet group.
 <NICK>    is an alternate nickname. You have to pass *alternate* nicknames
           on the command line as n:<NICK>. On the contrary, you don't have
@@ -141,7 +147,7 @@ NOTES:
 
           You'll be able to use ALIAS as argument for "s" option, like:
 
-          "$(basename $0) s:ALIAS [n:<NICK>] f".
+          "$(basename $0) s:ALIAS [n:<NICK>]".
 
           (with the latter example you'll see notices from people you
           follow on http://micro.example.com). For convevience, try to keep
@@ -266,7 +272,7 @@ key_public=p key_update=u key_update_w=U key_mentions=m key_reply=r
 key_user=N key_search=S key_context=c key_group=g key_resend=R key_details=d
 key_dir_msg_send=M key_configure=k key_help=h key_Help=H key_prev=L
 key_alt_nick=n key_sn=s key_follow=f key_unfollow=F key_join=j key_unjoin=J
-key_delete=D key_like=l key_open=o
+key_delete=D key_like=a key_open=o
 
 for i in $(grep ^key_ $HOME/.qataki/qataki.conf) ; do
 	eval $i
