@@ -347,7 +347,6 @@ col_bang='[1;31;40m'
 
 # When local function's $1 is 'filter', more passages are needed
 fn_download() {
-	/usr/bin/env HOME=$conf_dir curl -f -s -n --data-urlencode "q=$string" "$data"
 	{ if [[ "$1" != filter ]] ; then
 		/usr/bin/env HOME=$conf_dir curl -f -s -n "$data" > $tmp_file
 	else
