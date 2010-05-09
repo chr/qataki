@@ -617,16 +617,15 @@ case $1 in
 
 		if [[ "$site" == *twitter* ]] ; then
 			site=http://api.twitter.com/1
-		else
-			# XXX: needed?
-			site=$identica
 		fi
 
-		if [[ $1 = *$key_resend ]] ; then
-			kind=retweet
+		if [[ $1 = *$key_like ]] ; then
+			[[ "$site" == *twitter* ]] && api=favorites || api=api/favorites
+			kind=create
 		else
-			[[ $1 = *$key_delete ]] && kind=destroy || kind=favorites/create
+			[[ $1 = *$key_resend ]] && kind=retweet || kind=destroy
 		fi
+
 		/usr/bin/env HOME=$conf_dir curl -f -s -n -X POST \
 		  -d "source=$from_string" \
 		  "$site/$api/$kind/$notice_id.xml" 1>/dev/null
