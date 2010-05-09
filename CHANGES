@@ -1,3 +1,9 @@
+0.04	2010-05-09
+	* Added new options: follow/unfollow people, join/unjoin groups,
+	  delete notices, open links in a text based web browser.
+	* Modified default $key_last
+	* Bugfixes.
+
 0.03	2010-05-02
 
 	* Added pastebin feature.
