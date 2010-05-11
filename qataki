@@ -270,7 +270,7 @@ fn_configuration() {
 # Default options. Can be changed in $conf_file
 key_public=p key_update=u key_update_w=U key_mentions=m key_reply=r
 key_user=N key_search=S key_context=c key_group=g key_resend=R key_details=d
-key_dir_msg_send=M key_configure=k key_help=h key_Help=H key_prev=L
+key_dir_msg_send=M key_configure=k key_help=h key_Help=H key_prev=P
 key_alt_nick=n key_sn=s key_follow=f key_unfollow=F key_join=j key_unjoin=J
 key_delete=D key_like=a key_open=o
 
