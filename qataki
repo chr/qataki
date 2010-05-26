@@ -514,12 +514,12 @@ fn_interactive_update() {
 fn_prepare_auth() {
 	site_name=${site/*:\/\/}
 
-	# \(api.\)\?... matches api.twitter.com
-	grep "machine \(api.\)\?$site_name login $my_nick" $conf_file \
+	# \(api.\)\?... shuld match api.twitter.com, so \(api.\)*...
+	grep "machine \(api.\)*$site_name login $my_nick" $conf_file \
 	  > $conf_dir/.netrc
 
 	# Check that site (without http[s]://) is in .netrc
-	[[ ! $(grep $site_name $conf_dir/.netrc) ]] && usage no_auth
+	[[ -z $(grep $site_name $conf_dir/.netrc 2>/dev/null) ]] && usage no_auth
 }
 
 fn_status_info() {
@@ -548,7 +548,7 @@ fn_paste() {
 
 # For auth we will generate a new .netrc site, after moving the old one.
 # When the scripts exits, restore .netrc (a sane umask was already set):
-trap "mv $HOME/.netrc.$$ $HOME/.netrc 2>/dev/null" EXIT
+trap "rm -f $conf_dir/.netrc" EXIT
 
 # Options that need authentication
 [[ $1 = *[$key_update$key_update_w$key_reply$key_mentions$key_sn$key_resend\
