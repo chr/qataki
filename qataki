@@ -63,56 +63,56 @@ OPTION    ARGUMENT           RESULT
                              If you use the optional "+" argument, all statuses
                              will be displayed. Otherwise only new statuses.
 $key_public                            Retrive messages from public timeline.
-                             key_public=p
+                             Default: key_public=p
 $key_group         <GROUP>            Retrive messages from <GROUP timeline.
-                             key_group=g
+                             Default: key_group=g
 $key_update         "message"          Update your status with a "message".
-                             key_update=u
+                             Default: key_update=u
 $key_update_w                            Type a message interactively and update status
                              (end message with ^D (that is Control-d)).
-                             key_update_w=U
+                             Default: key_update_w=U
 $key_mentions         [+]                Show notices where you are mentioned (@you).
                              If you use the optional "+" argument, all statuses
                              will be displayed. Otherwise only new statuses.
-                             key_mentions=m
+                             Default: key_mentions=m
 $key_reply         <NUMBER> "message" Reply to message number <NUMBER>.
-                             key_reply=r
+                             Default: key_reply=r
 $key_context         <NUMBER>           Show conversation relative to notice <NUMBER>.
-                             key_context=c
+                             Default: key_context=c
 $key_alt_nick:<NICK>  <OPTION>           Use an alternate nick. This option can be
                              preceded by [i|t|s:<SITE>] (i by default).
-                             key_alt_nick=n
+                             Default: key_alt_nick=n
 $key_user         <USER>             Show <USER>'s timeline (last statuses).
-                             key_user=N
+                             Default: key_user=N
 $key_prev                            Show previous (last) messages.
-                             key_prev=P
+                             Default: key_prev=P
 $key_details         <NUMBER>           Show details about notice <NUMBER> (note that
                              short links will be replaced by real links).
-                             key_details=d
+                             Default: key_details=d
 $key_sn:<SITE>  <OPTION>           Use <OPTION> (exept s itself) on <SITE>.
-                             key_sn=s
+                             Default: key_sn=s
 $key_configure                            Configure an account.
-                             key_configure=k
+                             Default: key_configure=k
 $key_search         "string"           Search messages with "string".
-                             key_search=S
+                             Default: key_search=S
 $key_resend         <NUMBER>           Retweet message number <NUMBER>.
-                             key_resend=R
+                             Default: key_resend=R
 $key_dir_msg_send         <USER> "message"   Send a direct msg (with text "message") to <USER>.
-                             key_dir_msg_send=M
+                             Default: key_dir_msg_send=M
 $key_follow         <USER>|<NUMBER>    Follow someone (AKA subscribe).
-                             key_follow=f
+                             Default: key_follow=f
 $key_unfollow         <USER>|<NUMBER>    Unfollow someone (AKA unsubscribe).
-                             key_follow=F
+                             Default: key_follow=F
 $key_join         <GROUP>            Join <GROUP>.
-                             key_join=j
+                             Default: key_join=j
 $key_unjoin         <GROUP>            Unjoin <GROUP>.
-                             key_unjoin=J
+                             Default: key_unjoin=J
 a         <NUMBER>           Add notice <NUMBER> to favorites list.
-                             key_like=a
+                             Default: key_like=a
 o         <NUMBER>           Open a link present in notice <NUMBER> in your
                              \$BROWSER. If more than 1 link is present, a menu
                              to choose from will be displayed.
-                             key_open=o
+                             Default: key_open=o
 
 
 NOTES:
