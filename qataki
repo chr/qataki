@@ -9,9 +9,6 @@ max_stats=30		# Max number of statuses to display
 opt_editor=			# Options for your $EDITOR
 from_string=Qataki  # Change for whatever you like.
 
-# Not used yet
-qataki_url="&lt;a href='http://chr.tx0.org/qataki' alt='Qataki' title='Qataki'&gt;qataki&lt;/a&gt;"
-
 usage() {
 case $1 in
 	file_miss)
