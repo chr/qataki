@@ -92,8 +92,15 @@ $key_configure                            Configure an account.
                              Default: key_configure=k
 $key_search         "string"           Search messages with "string".
                              Default: key_search=S
-$key_resend         <NUMBER>           Retweet message number <NUMBER>.
+$key_resend         <NUMBER>           Retweet/redent message number <NUMBER>.
                              Default: key_resend=R
+$key_comment         <NUMBER> [message] Retweet/redent message number <NUMBER>. The option
+                             differs from the previous because you can:
+                             1) Optionally add a message before resent message;
+                             2) Transforms groups tags in hashtags (available
+                                only for Identi.ca/StatusNet sites).
+                             Technically, this option generates a reply.
+                             Default: key_comment=C
 $key_dir_msg_send         <USER> "message"   Send a direct msg (with text "message") to <USER>.
                              Default: key_dir_msg_send=M
 $key_follow         <USER>|<NUMBER>    Follow someone (AKA subscribe).
