@@ -581,7 +581,7 @@ case $1 in
 			comment=$(fn_status_info '/<status>/' '/<user>/' '<text>' | \
 			  sed 's/!\([^[:space:]][^[:space:]]*\)/#\1/g')
 			[[ $site = *twitter* ]] && resend=RT || resend=RD
-			reply_status="$message $resend @user_name $comment"
+			reply_status="$message $resend @$user_name $comment"
 		else
 			[[ -z $message ]] && { echo 'Message?' ; exit 1 ; }
 			reply_status="@$user_name $message"
