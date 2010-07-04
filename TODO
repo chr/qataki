@@ -7,3 +7,5 @@ Random stuff to do
 - {context} should recognise first message with replies. (*)
 - {context} is broken if message is a reply to a SN site. (*)
 - Better hashtags and users highlighting.
+- Block and Flag users/spammers.
+- Give some info of users (e.g., groups, total posts, ecc.)
