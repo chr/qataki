@@ -3,12 +3,7 @@
 # Qataki is free and unencumbered public domain software. For more
 # information see http://unlicense.org/ or the accompanying UNLICENSE file.
 
-opt_pager_opts='-REX'  # Options for pager (less)
-opt_max_chars=140      # Max characters on update messages
-opt_max_stats=30       # Max number of statuses to display
-opt_editor=            # Options for your $EDITOR
-opt_order=1            # If != 1 chronological order will be used
-opt_from=Qataki        # Change for whatever you like.
+# You can modify default options in $conf_file ($HOME/.qataki/qataki.conf)
 
 usage() {
 case $1 in
@@ -270,7 +265,18 @@ fn_configuration() {
 
 [[ ! -d $cache_dir ]] && mkdir -p $cache_dir # Also $conf_dir
 [[ ! -f $tmp_file ]] && > $tmp_file
-[[ ! -f $conf_file ]] && > $conf_file && fn_configuration
+if [[ ! -f $conf_file ]] ; then
+	cat <<-EOC > $conf_file
+		# These are options you can modify:
+		opt_pager_opts='-REX' # Options for pager (less)
+		opt_max_chars=140     # Max characters on update messages
+		opt_max_stats=30      # Max number of statuses to display
+		opt_editor=           # Options for your $EDITOR
+		opt_order=default     # 'dafault' -> as website; 'date' -> chronological
+		opt_from=Qataki       # Change for whatever you like.
+EOC
+	fn_configuration
+fi
 
 
 # Default options. Can be changed in $conf_file
@@ -280,9 +286,13 @@ key_dir_msg_send=M key_configure=k key_help=h key_Help=H key_prev=P
 key_alt_nick=n key_sn=s key_follow=f key_unfollow=F key_join=j key_unjoin=J
 key_delete=D key_like=a key_open=o key_comment=C key_block=b key_unblock=B
 
-for i in $(grep ^key_ $HOME/.qataki/qataki.conf) ; do
+for i in $(grep "^\(key\|opt\)_" $conf_file) ; do
 	eval $i
 done
+
+opt_pager_opts=${opt_pager_opts:-'-REX'} opt_max_chars=${opt_max_chars:-140}
+opt_max_stats=${opt_max_stats:-30} opt_order=${opt_order:-default}
+opt_from=${opt_from:-Qataki}
 
 site=$identica api=api/statuses last_file=$cache_dir/last.dent
 [[ $1 = i ]] && shift
@@ -421,7 +431,7 @@ fn_conversation() {
 
 # Return an ordered list for notices: # <ol><li>Notice 1<li>Notice 2..</ol>
 fn_ol_list() {
-	if [[ $opt_order -eq 1 ]] ; then
+	if [[ $opt_order != date ]] ; then
 		awk '{ print NR ".", $0 "<br>" }'
 	else
 		awk '{ print NR ".", $0 "<br>" }' | $sort -nr
