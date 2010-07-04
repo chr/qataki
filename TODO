@@ -1,0 +1,9 @@
+Random stuff to do
+==================
+
+(Those with an astesrisk have priority.)
+
+- Add $EDITOR option for replies. (*)
+- {context} should recognise first message with replies. (*)
+- {context} is broken if message is a reply to a SN site. (*)
+- Better hashtags and users highlighting.
