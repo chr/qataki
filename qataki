@@ -3,11 +3,12 @@
 # Qataki is free and unencumbered public domain software. For more
 # information see http://unlicense.org/ or the accompanying UNLICENSE file.
 
-opt_pager='-REX' 	# Options for pager (less)
-max_chars=140		# Max characters on update messages
-max_stats=30		# Max number of statuses to display
-opt_editor=			# Options for your $EDITOR
-from_string=Qataki  # Change for whatever you like.
+opt_pager_opts='-REX'  # Options for pager (less)
+opt_max_chars=140      # Max characters on update messages
+opt_max_stats=30       # Max number of statuses to display
+opt_editor=            # Options for your $EDITOR
+opt_order=1            # If != 1 chronological order will be used
+opt_from=Qataki        # Change for whatever you like.
 
 usage() {
 case $1 in
@@ -30,7 +31,7 @@ case $1 in
 		echo "Not implemented"
 		exit 1 ;;
 	number)
-		echo "That option needs a number <= $max_stats"
+		echo "That option needs a number <= $opt_max_stats"
 		exit 1 ;;
 	invalid_paste)
 		echo 'Invalid paste string or an invalid file.'
@@ -277,7 +278,7 @@ key_public=p key_update=u key_update_w=U key_mentions=m key_reply=r
 key_user=N key_search=S key_context=c key_group=g key_resend=R key_details=d
 key_dir_msg_send=M key_configure=k key_help=h key_Help=H key_prev=P
 key_alt_nick=n key_sn=s key_follow=f key_unfollow=F key_join=j key_unjoin=J
-key_delete=D key_like=a key_open=o key_comment=C
+key_delete=D key_like=a key_open=o key_comment=C key_block=b key_unblock=B
 
 for i in $(grep ^key_ $HOME/.qataki/qataki.conf) ; do
 	eval $i
@@ -335,13 +336,18 @@ site=${site%/} # Be sure to leave out trailing slash
 cols=$(( $(tput cols) - 2 ))
 [[ $cols -le 10 ]] && cols=78 # If 'tput cols' fails
 
+sort=sort # If gsort is present, we are on BSD and need gsort:
+if which gsort 1>/dev/null ; then
+	sort=gsort
+fi
+
 if which elinks 1>/dev/null ; then
 	browser=${BROWSER:-elinks}
-	render="elinks -dump -dump-width $cols -eval 'set document.browse.margin_width = 1' -force-html -no-numbering -no-references"
+	render="elinks -dump -dump-width 300 -eval 'set document.browse.margin_width = 1' -force-html -no-numbering -no-references"
 else
 	browser=${BROWSER:-lynx}
 	# There's a -nomargins option, but it's less readable
-	render="lynx -dump -width $cols -force_html -stdin -display_charset=utf-8"
+	render="lynx -dump -width 300 -force_html -stdin -display_charset=utf-8"
 fi
 
 # Valid characters for for #hashes, @users, !groups
@@ -415,12 +421,17 @@ fn_conversation() {
 
 # Return an ordered list for notices: # <ol><li>Notice 1<li>Notice 2..</ol>
 fn_ol_list() {
-	awk 'BEGIN { print "<ol>" } { print "<li>" $0 } END { print "</ol>" } '
+	if [[ $opt_order -eq 1 ]] ; then
+		awk '{ print NR ".", $0 "<br>" }'
+	else
+		awk '{ print NR ".", $0 "<br>" }' | $sort -nr
+	fi
+	#awk 'BEGIN { print "<ol>" } { print "<li>" $0 } END { print "</ol>" } '
 }
 
 # Links are searched in a way that http, ftp and gopher are valid links.
 fn_format() {
-	eval $render | \
+	eval $render | par ${cols}p5dh | \
 	sed "s/^\([^1-9]*[1-9][0-9]*\.[^\*]*\)\*###\([^ ][^ ]*\)\*:/\1$col_foll\2$col_norm:/;\
 	  s/^\([^1-9]*[1-9][0-9]*\.[^\*]*\)\*\([^ ][^ ]*\)\*:/\1$col_emph\2$col_norm:/;\
 	  s@\([fgh][a-zA-Z]*://[^ ][^ ]*[a-zA-Z0-9/]\)@$col_link\1$col_norm@g;\
@@ -545,21 +556,21 @@ trap "rm -f $conf_dir/.netrc" EXIT
 # Options that need authentication
 [[ $1 = *[$key_update$key_update_w$key_reply$key_mentions$key_sn$key_resend\
 $key_dir_msg_send$key_delete$key_follow$key_unfollow$key_join$key_unjoin\
-$key_like$key_comment] ]] && fn_prepare_auth
+$key_like$key_comment$key_block$key_unblock] ]] && fn_prepare_auth
 
 # XXX: 1) Rewrite options parsing. 2) Make $site/$api etc. better.
 case $1 in
-	*$key_public)	data="$site/$api/public_timeline.xml?count=$max_stats"
+	*$key_public)	data="$site/$api/public_timeline.xml?count=$opt_max_stats"
 		fn_download ;;
 	*$key_update) msg=$2
 		if echo "$msg" | grep '%%' 1>/dev/null 2>&1 ; then
 			fn_paste
 		fi
-		/usr/bin/env HOME=$conf_dir curl -s -n -d "source=$from_string" \
+		/usr/bin/env HOME=$conf_dir curl -s -n -d "source=$opt_from" \
 		  --data-urlencode "status=$msg" $site/$api/update.xml 1>/dev/null
 		exit 0 ;;
 	*$key_update_w) message= ; fn_editor_update
-		/usr/bin/env HOME=$conf_dir curl -s -n -d "source=$from_string" \
+		/usr/bin/env HOME=$conf_dir curl -s -n -d "source=$opt_from" \
 		  --data-urlencode "status=$message" $site/$api/update.xml 1>/dev/null
 		exit 0 ;;
 	*$key_mentions)
@@ -567,7 +578,7 @@ case $1 in
 			last_stat=$(sed -n "2p" $last_file)
 			[[ $last_stat = *[0-9]* ]] || last_stat=1
 		fi
-		data_par="since_id=${last_stat}&count=$max_stats"
+		data_par="since_id=${last_stat}&count=$opt_max_stats"
 		data="$site/$api/mentions.xml?$data_par"
 		fn_download && fn_last_status 2 ;;
 	*$key_reply|*$key_comment)
@@ -588,13 +599,13 @@ case $1 in
 		fi
 
 		# XXX: @file is recognised by curl. Problems?
-		/usr/bin/env HOME=$conf_dir curl -s -n -d "source=$from_string" \
+		/usr/bin/env HOME=$conf_dir curl -s -n -d "source=$opt_from" \
 		  --data-urlencode "status=${reply_status# }" \
 		  -d "in_reply_to_status_id=$reply_to" $site/$api/update.xml 1>/dev/null
 		exit 0 ;;
 	*$key_user) [[ "$site" == *twitter* ]] && site=http://api.twitter.com/1
 		nick=$2
-		data="$site/$api/user_timeline.xml?screen_name=${nick}&count=$max_stats"
+		data="$site/$api/user_timeline.xml?screen_name=${nick}&count=$opt_max_stats"
 		fn_download ;;
 	*$key_search)
 		if [[ "$site" == *twitter* ]] ; then
@@ -603,7 +614,7 @@ case $1 in
 			site=$identica/api
 		fi
 		string=$2
-		data="$site/search.atom?rpp=$max_stats"
+		data="$site/search.atom?rpp=$opt_max_stats"
 		fn_download filter ;;
 	*$key_context) [[ "$site" == *twitter* ]] && usage no_impl
 		# Retrive conversation URL from status id
@@ -614,13 +625,13 @@ case $1 in
 		    }")
 		# Format conversation
 		fn_conversation "$conversation_url" | fn_format | \
-		  sed '/^$/d' | less $opt_pager && exit 0 ;;
+		  sed '/^$/d' | less $opt_pager_opts && exit 0 ;;
 	*$key_group|*$key_join|*$key_unjoin)
 		[[ "$site" == *twitter* ]] && usage no_impl
 		group=$2
 		api=api/statusnet
 		if [[ $1 = *$key_group ]] ; then
-			data="$site/$api/groups/timeline.xml?id=$group&count=$max_stats"
+			data="$site/$api/groups/timeline.xml?id=$group&count=$opt_max_stats"
 			fn_download
 		else
 			[[ $1 = *$key_join ]] && kind=join || kind=leave
@@ -650,14 +661,14 @@ case $1 in
 		fi
 
 		/usr/bin/env HOME=$conf_dir curl -f -s -n -X POST \
-		  -d "source=$from_string" \
+		  -d "source=$opt_from" \
 		  "$site/$api/$kind/$notice_id.xml" 1>/dev/null
 		exit 0 ;;
 	*$key_dir_msg_send) to_user=$2 # XXX: FIX URL
 		[[ $to_user = *[!a-zA-Z0-9]* ]] && { echo 'username is alphanum' ; exit 1 ; }
 		[[ -n $3 ]] && dir_msg=$3 || { echo 'Enter a message' ; exit 1 ; }
 		[[ "$site" == *twitter* ]] && unset api
-		/usr/bin/env HOME=$conf_dir curl -n -X POST -d "source=$from_string" \
+		/usr/bin/env HOME=$conf_dir curl -n -X POST -d "source=$opt_from" \
 		  --data-urlencode "user=$to_user" --data-urlencode "text=$dir_msg" \
 		  "$site/api/direct_messages/new.xml" 1>/dev/null
 		echo "$site/api/direct_messages/new.xml"
@@ -668,14 +679,18 @@ case $1 in
 	*$key_configure)	fn_configuration ;;
 	*$key_help|*$key_Help) usage ;;
 	*$key_prev) : ;; # Do nothing: Messages are already in $tmp_file
-	*$key_follow|*$key_unfollow)
+	*[$key_follow$key_unfollow$key_block$key_unblock])
+		# XXX: block API issues.
+		[[ $1 = [$key_follow$key_unfollow] ]] && api=friendships || api=blocks
 		if [[ "$site" == *twitter* ]] ; then
-			site=http://api.twitter.com/1 api=friendships
+			site=http://api.twitter.com/1
 		else
-			api=api/friendships
+			api=api/$api
 		fi
-		[[ $1 = *$key_follow ]] && kind=create || kind=destroy
-		if [[ $2 != *[a-zA-Z]* && $2 -le $max_stats ]] ; then
+
+		[[ $1 = *[$key_follow$key_block] ]] && kind=create || kind=destroy
+
+		if [[ $2 != *[a-zA-Z]* && $2 -le $opt_max_stats ]] ; then
 			# It's a number and probably not a username
 			status_num=$2 tag_cont_re='.'
 			user=$(fn_status_info '/<user>/' '/<\/user>/' '<id>')
@@ -685,10 +700,11 @@ case $1 in
 			data_par="screen_name=$user"
 		fi
 		data="$site/$api/$kind.xml?$data_par"
-		/usr/bin/env HOME=$conf_dir curl -X POST -f -s -n "$data" 1>/dev/null
-		exit 1 ;;
+		echo $data
+		/usr/bin/env HOME=$conf_dir curl -X POST -n "$data" 1>/dev/null
+		exit 0 ;;
 	*$key_open)
-		if [[ $2 != *[a-zA-Z]* && $2 -le $max_stats ]] ; then
+		if [[ $2 != *[a-zA-Z]* && $2 -le $opt_max_stats ]] ; then
 			status_num=$2 tag_cont_re='.'
 			# If there's a NL it won't take all the text.
 			text=$(fn_status_info '/<status>/' '/<user>/' '<text>')
@@ -706,18 +722,15 @@ case $1 in
 
 		[[ -z $url ]] && echo 'No URL' || eval $browser $url
 		exit 1;;
-	# TODO BLOCK/FLAG ??
-	#b)
-	#	curl -n -d "screen_name=$2" http://identi.ca/api/report_spam.xml
-	#	exit 0 ;;
+	# TODO FLAG ??
 	*)	fn_prepare_auth # This is because there's no $1 (unless it's a '+')
 		last_stat=1
 		[[ $1 != '+' && -f $last_file ]] && last_stat=$(sed -n "1p" $last_file)
 
-		data_par="since_id=${last_stat}&count=$max_stats"
+		data_par="since_id=${last_stat}&count=$opt_max_stats"
 		#data="$site/$api/friends_timeline.xml$data_par"
 		data="$site/$api/home_timeline.xml?$data_par"
 		fn_download && fn_last_status 1 ;;
 esac
 
-fn_extract | fn_ol_list | fn_format | less $opt_pager
+fn_extract | fn_ol_list | fn_format | less $opt_pager_opts
