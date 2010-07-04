@@ -293,7 +293,7 @@ done
 
 opt_pager_opts=${opt_pager_opts:-'-REX'} opt_max_chars=${opt_max_chars:-140}
 opt_max_stats=${opt_max_stats:-30} opt_order=${opt_order:-default}
-opt_from=${opt_from:-Qataki}
+opt_from=${opt_from:-Qataki} opt_show_date=${opt_show_date:-0}
 
 site=$identica api=api/statuses last_file=$cache_dir/last.dent
 [[ $1 = i ]] && shift
