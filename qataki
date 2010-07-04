@@ -343,6 +343,7 @@ fi
 [[ ! -f $last_file ]] && printf "\n\n\n" > $last_file
 
 site=${site%/} # Be sure to leave out trailing slash
+b_cols=300 # Columns for $BROWSER. Note that it's not $cols
 cols=$(( $(tput cols) - 2 ))
 [[ $cols -le 10 ]] && cols=78 # If 'tput cols' fails
 
@@ -353,11 +354,11 @@ fi
 
 if which elinks 1>/dev/null ; then
 	browser=${BROWSER:-elinks}
-	render="elinks -dump -dump-width 300 -eval 'set document.browse.margin_width = 1' -force-html -no-numbering -no-references"
+	render="elinks -dump -dump-width \$b_cols -eval 'set document.browse.margin_width = 1' -force-html -no-numbering -no-references"
 else
 	browser=${BROWSER:-lynx}
 	# There's a -nomargins option, but it's less readable
-	render="lynx -dump -width 300 -force_html -stdin -display_charset=utf-8"
+	render="lynx -dump -width $b_cols -force_html -stdin -display_charset=utf-8"
 fi
 
 # Valid characters for for #hashes, @users, !groups
@@ -439,9 +440,11 @@ fn_ol_list() {
 	#awk 'BEGIN { print "<ol>" } { print "<li>" $0 } END { print "</ol>" } '
 }
 
+
 # Links are searched in a way that http, ftp and gopher are valid links.
 fn_format() {
-	eval $render | par ${cols}p5dh | \
+	# If called with a paremeter 'par' won't be used (see e.g., "conversation")
+	{ [[ -z $1 ]] && eval $render | par ${cols}p5dh || eval $render ; } | \
 	sed "s/^\([^1-9]*[1-9][0-9]*\.[^\*]*\)\*###\([^ ][^ ]*\)\*:/\1$col_foll\2$col_norm:/;\
 	  s/^\([^1-9]*[1-9][0-9]*\.[^\*]*\)\*\([^ ][^ ]*\)\*:/\1$col_emph\2$col_norm:/;\
 	  s@\([fgh][a-zA-Z]*://[^ ][^ ]*[a-zA-Z0-9/]\)@$col_link\1$col_norm@g;\
@@ -628,13 +631,14 @@ case $1 in
 		fn_download filter ;;
 	*$key_context) [[ "$site" == *twitter* ]] && usage no_impl
 		# Retrive conversation URL from status id
+		b_cols=$cols
 		status_num=$2 tag_cont_re='.'
 		context_id=$(fn_status_info '/<status>/' '/<user>/' '<in_reply_to_status_id>')
 		conversation_url=$(curl -L -s "$site/notice/$context_id" | \
 		  sed -n "/>in context</ { s/[^\"]*\"\([^#]*\).*/\1/ p
 		    }")
 		# Format conversation
-		fn_conversation "$conversation_url" | fn_format | \
+		fn_conversation "$conversation_url" | fn_format conversation | \
 		  sed '/^$/d' | less $opt_pager_opts && exit 0 ;;
 	*$key_group|*$key_join|*$key_unjoin)
 		[[ "$site" == *twitter* ]] && usage no_impl
