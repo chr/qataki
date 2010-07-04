@@ -461,7 +461,12 @@ fn_ol_list() {
 # Links are searched in a way that http, ftp and gopher are valid links.
 fn_format() {
 	# If called with a paremeter 'par' won't be used (see e.g., "conversation")
-	{ [[ -z $1 ]] && eval $render | par ${cols}p5dh || eval $render ; } | \
+	# B+_x5D means "add ']' as body character". Necessary is a mess.
+	if [[ -z $1 ]] ; then
+		eval $render | par B+_x5D ${cols}p5dh
+	else
+		eval $render
+	fi | \
 	sed "s/^\([^1-9]*[1-9][0-9]*\.[^\*]*\)\*###\([^ ][^ ]*\)\*:/\1$col_foll\2$col_norm:/;\
 	  s/^\([^1-9]*[1-9][0-9]*\.[^\*]*\)\*\([^ ][^ ]*\)\*:/\1$col_emph\2$col_norm:/;\
 	  s@\([fgh][a-zA-Z]*://[^ ][^ ]*[a-zA-Z0-9/]\)@$col_link\1$col_norm@g;\
