@@ -450,7 +450,7 @@ fn_ol_list() {
 		awk '{ print NR ".", $0 "<br>" }' | $sort -nr
 	fi | \
 	if [[ $opt_kill = 1 && -s $kill_file ]] ; then
-		grep -f $HOME/.qataki/killfile
+		grep -v -f $HOME/.qataki/killfile
 	else
 		cat - # UUOC ?!?!?
 	fi
