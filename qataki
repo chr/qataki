@@ -737,8 +737,7 @@ case $1 in
 			data_par="screen_name=$user"
 		fi
 		data="$site/$api/$kind.xml?$data_par"
-		echo $data
-		/usr/bin/env HOME=$conf_dir curl -X POST -n "$data" 1>/dev/null
+		/usr/bin/env HOME=$conf_dir curl -s -X POST -n "$data" 1>/dev/null
 		exit 0 ;;
 	*$key_open)
 		if [[ $2 != *[a-zA-Z]* && $2 -le $opt_max_stats ]] ; then
