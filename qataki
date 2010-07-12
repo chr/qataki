@@ -461,9 +461,9 @@ fn_ol_list() {
 # Links are searched in a way that http, ftp and gopher are valid links.
 fn_format() {
 	# If called with a paremeter 'par' won't be used (see e.g., "conversation")
-	# B+_x5D means "add ']' as body character". Necessary is a mess.
+	# B+_x5D_x7D means "add ']' and '}' as body characters".
 	if [[ -z $1 ]] ; then
-		eval $render | par B+_x5D ${cols}p5dh
+		eval $render | par B+_x5D_x7D ${cols}p5dh
 	else
 		eval $render
 	fi | \
