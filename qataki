@@ -689,9 +689,7 @@ case ${param[0]} in
 		    }")
 		# Format conversation
 		fn_conversation "$conversation_url" | fn_format conversation | \
-		  sed "/^$/d;s/ \{10\}/        $col_emph|$col_norm/g" | \
-		  sed "s/ \{5\}/  $col_hash|$col_norm/g" | less $opt_pager_opts
-		  exit 0 ;;
+		  sed '/^$/d' | less $opt_pager_opts && exit 0 ;;
 	*$key_group|*$key_join|*$key_unjoin)
 		[[ "$site" == *twitter* ]] && usage no_impl
 		group=${param[1]}
