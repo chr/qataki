@@ -460,7 +460,7 @@ fn_ol_list() {
 
 # Links are searched in a way that http, ftp and gopher are valid links.
 fn_format() {
-	# If called with a paremeter 'par' won't be used (see e.g., "conversation")
+	# If called with a parameter 'par' won't be used (see e.g., "conversation")
 	# B+_x5D_x7D means "add ']' and '}' as body characters".
 	if [[ -z $1 ]] ; then
 		eval $render | par B+_x5D_x7D ${cols}p5dh
@@ -602,6 +602,7 @@ case $1 in
 		if echo "$msg" | grep '%%' 1>/dev/null 2>&1 ; then
 			fn_paste
 		fi
+		exit 1
 		/usr/bin/env HOME=$conf_dir curl -s -n -d "source=$opt_from" \
 		  --data-urlencode "status=$msg" $site/$api/update.xml 1>/dev/null
 		exit 0 ;;
