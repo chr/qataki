@@ -362,13 +362,13 @@ if which gsort 1>/dev/null ; then
 	sort=gsort
 fi
 
-if which elinks 1>/dev/null ; then
+if which helinks 1>/dev/null ; then
 	browser=${BROWSER:-elinks}
 	render="elinks -dump -dump-width \$b_cols -eval 'set document.browse.margin_width = 1' -force-html -no-numbering -no-references"
 else
 	browser=${BROWSER:-lynx}
 	# There's a -nomargins option, but it's less readable
-	render="lynx -dump -width $b_cols -force_html -stdin -display_charset=utf-8"
+	render="lynx -dump -width \$b_cols -force_html -stdin -display_charset=utf-8 -nonumbers -hiddenlinks=ignore -nolist"
 fi
 
 # Valid characters for for #hashes, @users, !groups
