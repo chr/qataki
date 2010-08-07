@@ -598,16 +598,34 @@ fn_paste() {
 # When the scripts exits, restore .netrc (a sane umask was already set):
 trap "rm -f $conf_dir/.netrc" EXIT
 
+read parameters_line <<< $(echo " $@") # XXX portability :(
+while read -t 0.1 line ; do # XXX again :((
+	parameters_pipe="$parameters_pipe $line"
+done
+
+parameters="$parameters_line $parameters_pipe"
+
+for i in $parameters ; do
+	param[${#param[@]}]=$i
+done
+
+fn_parameters() {
+	for (( i=$1 ; i<$2 ; i++ )) ; do
+		last_param="$last_param ${param[$i]}"
+	done
+	echo ${last_param# }
+}
+
 # Options that need authentication
-[[ $1 = *[$key_update$key_update_w$key_reply$key_mentions$key_sn$key_resend\
+[[ ${param[0]} = *[$key_update$key_update_w$key_reply$key_mentions$key_sn$key_resend\
 $key_dir_msg_send$key_delete$key_follow$key_unfollow$key_join$key_unjoin\
 $key_like$key_comment$key_block$key_unblock] ]] && fn_prepare_auth
 
 # XXX: 1) Rewrite options parsing. 2) Make $site/$api etc. better.
-case $1 in
+case ${param[0]} in
 	*$key_public)	data="$site/$api/public_timeline.xml?count=$opt_max_stats"
 		fn_download ;;
-	*$key_update) msg=$2
+	*$key_update) msg=$(fn_parameters 1 ${#param[@]})
 		if echo "$msg" | grep '%%' 1>/dev/null 2>&1 ; then
 			fn_paste
 		fi
@@ -619,7 +637,7 @@ case $1 in
 		  --data-urlencode "status=$message" $site/$api/update.xml 1>/dev/null
 		exit 0 ;;
 	*$key_mentions)
-		if [[ $2 != '+' && -f $last_file ]] ; then
+		if [[ ${param[1]} != '+' && -f $last_file ]] ; then
 			last_stat=$(sed -n "2p" $last_file)
 			[[ $last_stat = *[0-9]* ]] || last_stat=1
 		fi
@@ -627,13 +645,13 @@ case $1 in
 		data="$site/$api/mentions.xml?$data_par"
 		fn_download && fn_last_status 2 ;;
 	*$key_reply|*$key_comment)
-		message=$3
-		[[ -z $2 || $2 = *[!0-9]* ]] && { echo 'Select a number' && exit 1 ; }
+		message=$(fn_parameters 2 ${#param[@]})
+		[[ -z ${param[1]} || ${param[1]} = *[!0-9]* ]] && { echo 'Select a number' && exit 1 ; }
 
-		status_num=$2 tag_cont_re='.'
+		status_num=${param[1]} tag_cont_re='.'
 		reply_to=$(fn_status_info '/<status>/' '/<user>/' '<id>')
 		user_name=$(fn_status_info '/<user>/' '/<status>/' '<screen_name>')
-		if [[ $1 = $key_comment ]] ; then
+		if [[ ${param[0]} = $key_comment ]] ; then
 			comment=$(fn_status_info '/<status>/' '/<user>/' '<text>' | \
 			  sed 's/!\([^[:space:]][^[:space:]]*\)/#\1/g')
 			[[ $site = *twitter* ]] && resend=RT || resend=RD
@@ -649,7 +667,7 @@ case $1 in
 		  -d "in_reply_to_status_id=$reply_to" $site/$api/update.xml 1>/dev/null
 		exit 0 ;;
 	*$key_user) [[ "$site" == *twitter* ]] && site=http://api.twitter.com/1
-		nick=$2
+		nick=${param[1]}
 		data="$site/$api/user_timeline.xml?screen_name=${nick}&count=$opt_max_stats"
 		fn_download ;;
 	*$key_search)
@@ -658,13 +676,13 @@ case $1 in
 		else
 			site=$identica/api
 		fi
-		string=$2
+		string=$(fn_parameters 1 ${#param[@]})
 		data="$site/search.atom?rpp=$opt_max_stats"
 		fn_download filter ;;
 	*$key_context) [[ "$site" == *twitter* ]] && usage no_impl
 		# Retrive conversation URL from status id
 		b_cols=$cols
-		status_num=$2 tag_cont_re='.'
+		status_num=${param[1]} tag_cont_re='.'
 		context_id=$(fn_status_info '/<status>/' '/<user>/' '<in_reply_to_status_id>')
 		conversation_url=$(curl -L -s "$site/notice/$context_id" | \
 		  sed -n "/>in context</ { s/[^\"]*\"\([^#]*\).*/\1/ p
@@ -674,13 +692,13 @@ case $1 in
 		  sed '/^$/d' | less $opt_pager_opts && exit 0 ;;
 	*$key_group|*$key_join|*$key_unjoin)
 		[[ "$site" == *twitter* ]] && usage no_impl
-		group=$2
+		group=${param[1]}
 		api=api/statusnet
-		if [[ $1 = *$key_group ]] ; then
+		if [[ ${param[0]} = *$key_group ]] ; then
 			data="$site/$api/groups/timeline.xml?id=$group&count=$opt_max_stats"
 			fn_download
 		else
-			[[ $1 = *$key_join ]] && kind=join || kind=leave
+			[[ ${param[0]} = *$key_join ]] && kind=join || kind=leave
 			data="$site/$api/groups/$kind/$group.xml"
 			/usr/bin/env HOME=$conf_dir curl -X POST -f -s -n "$data" \
 			  1>/dev/null && exit 0
@@ -692,27 +710,27 @@ case $1 in
 			re1='/<user>/' re2='<id>' # This is normal case (e.g., API)
 		fi
 
-		status_num=$2 tag_cont_re='.'
+		status_num=${param[1]} tag_cont_re='.'
 		notice_id=$(fn_status_info '/<status>/' "$re1" "$re2")
 
 		if [[ "$site" == *twitter* ]] ; then
 			site=http://api.twitter.com/1
 		fi
 
-		if [[ $1 = *$key_like ]] ; then
+		if [[ ${param[0]} = *$key_like ]] ; then
 			[[ "$site" == *twitter* ]] && api=favorites || api=api/favorites
 			kind=create
 		else
-			[[ $1 = *$key_resend ]] && kind=retweet || kind=destroy
+			[[ ${param[0]} = *$key_resend ]] && kind=retweet || kind=destroy
 		fi
 
 		/usr/bin/env HOME=$conf_dir curl -f -s -n -X POST \
 		  -d "source=$opt_from" \
 		  "$site/$api/$kind/$notice_id.xml" 1>/dev/null
 		exit 0 ;;
-	*$key_dir_msg_send) to_user=$2 # XXX: FIX URL
+	*$key_dir_msg_send) to_user=${param[1]} # XXX: FIX URL
 		[[ $to_user = *[!a-zA-Z0-9]* ]] && { echo 'username is alphanum' ; exit 1 ; }
-		[[ -n $3 ]] && dir_msg=$3 || { echo 'Enter a message' ; exit 1 ; }
+		[[ -n ${param[2]} ]] && dir_msg=$(fn_parameters 2 ${#param[@]}) || { echo 'Enter a message' ; exit 1 ; }
 		[[ "$site" == *twitter* ]] && unset api
 		/usr/bin/env HOME=$conf_dir curl -n -X POST -d "source=$opt_from" \
 		  --data-urlencode "user=$to_user" --data-urlencode "text=$dir_msg" \
@@ -721,36 +739,36 @@ case $1 in
 		exit 0 ;;
 	*$key_details)
 		grep '<verified>' $tmp_file 1>/dev/null || site=$identica # verif -> tw
-		fn_details $2 && exit 0 ;;
+		fn_details ${param[1]} && exit 0 ;;
 	*$key_configure)	fn_configuration ;;
 	*$key_help|*$key_Help) usage ;;
 	*$key_prev) : ;; # Do nothing: Messages are already in $tmp_file
 	*[$key_follow$key_unfollow$key_block$key_unblock])
 		# XXX: block API issues.
-		[[ $1 = [$key_follow$key_unfollow] ]] && api=friendships || api=blocks
+		[[ ${param[0]} = [$key_follow$key_unfollow] ]] && api=friendships || api=blocks
 		if [[ "$site" == *twitter* ]] ; then
 			site=http://api.twitter.com/1
 		else
 			api=api/$api
 		fi
 
-		[[ $1 = *[$key_follow$key_block] ]] && kind=create || kind=destroy
+		[[ ${param[0]} = *[$key_follow$key_block] ]] && kind=create || kind=destroy
 
-		if [[ $2 != *[a-zA-Z]* && $2 -le $opt_max_stats ]] ; then
+		if [[ ${param[1]} != *[a-zA-Z]* && ${param[1]} -le $opt_max_stats ]] ; then
 			# It's a number and probably not a username
-			status_num=$2 tag_cont_re='.'
+			status_num=${param[1]} tag_cont_re='.'
 			user=$(fn_status_info '/<user>/' '/<\/user>/' '<id>')
 			data_par="user_id=$user"
 		else
-			user=$2
+			user=${param[1]}
 			data_par="screen_name=$user"
 		fi
 		data="$site/$api/$kind.xml?$data_par"
 		/usr/bin/env HOME=$conf_dir curl -s -X POST -n "$data" 1>/dev/null
 		exit 0 ;;
 	*$key_open)
-		if [[ $2 != *[a-zA-Z]* && $2 -le $opt_max_stats ]] ; then
-			status_num=$2 tag_cont_re='.'
+		if [[ ${param[1]} != *[a-zA-Z]* && ${param[1]} -le $opt_max_stats ]] ; then
+			status_num=${param[1]} tag_cont_re='.'
 			# If there's a NL it won't take all the text.
 			text=$(fn_status_info '/<status>/' '/<user>/' '<text>')
 		else
@@ -768,9 +786,9 @@ case $1 in
 		[[ -z $url ]] && echo 'No URL' || eval $browser $url
 		exit 1;;
 	# TODO FLAG ??
-	*)	fn_prepare_auth # This is because there's no $1 (unless it's a '+')
+	*)	fn_prepare_auth # This is because there's no ${param[0]} (unless it's a '+')
 		last_stat=1
-		[[ $1 != '+' && -f $last_file ]] && last_stat=$(sed -n "1p" $last_file)
+		[[ ${param[0]} != '+' && -f $last_file ]] && last_stat=$(sed -n "1p" $last_file)
 
 		data_par="since_id=${last_stat}&count=$opt_max_stats"
 		#data="$site/$api/friends_timeline.xml$data_par"
