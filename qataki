@@ -348,9 +348,14 @@ fi
 [[ ! -f $last_file ]] && printf "\n\n\n" > $last_file
 
 site=${site%/} # Be sure to leave out trailing slash
-b_cols=300 # Columns for $BROWSER. Note that it's not $cols
 cols=$(( $(tput cols) - 2 ))
 [[ $cols -le 10 ]] && cols=78 # If 'tput cols' fails
+if which par 1>/dev/null ; then
+	par_exe=1
+	b_cols=300 # Columns for $BROWSER. Note that it's not $cols
+else
+	b_cols=$cols
+fi
 
 sort=sort # If gsort is present, we are on BSD and need gsort:
 if which gsort 1>/dev/null ; then
@@ -444,10 +449,14 @@ fn_conversation() {
 
 # Return an ordered list for notices: # <ol><li>Notice 1<li>Notice 2..</ol>
 fn_ol_list() {
-	if [[ $opt_order != date ]] ; then
-		awk '{ print NR ".", $0 "<br>" }'
+	if [[ $par_exe -ne 1 ]] ; then
+		awk 'BEGIN { print "<ol>" } { print "<li>" $0 } END { print "</ol>" } '
 	else
-		awk '{ print NR ".", $0 "<br>" }' | $sort -nr
+		if [[ $opt_order = date ]] ; then
+			awk '{ print NR ".", $0 "<br>" }' | $sort -nr
+		else
+			awk '{ print NR ".", $0 "<br>" }'
+		fi
 	fi | \
 	if [[ $opt_kill = 1 && -s $kill_file ]] ; then
 		grep -v -f $HOME/.qataki/killfile
@@ -462,7 +471,7 @@ fn_ol_list() {
 fn_format() {
 	# If called with a parameter 'par' won't be used (see e.g., "conversation")
 	# B+_x5D_x7D means "add ']' and '}' as body characters".
-	if [[ -z $1 ]] ; then
+	if [[ -z $1 && $par_exe -eq 1 ]] ; then
 		eval $render | par B+_x5D_x7D ${cols}p5dh
 	else
 		eval $render
