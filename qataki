@@ -531,6 +531,14 @@ fn_url() {
 	}}'
 }
 
+# Extract title from URL ($1).
+# Original idea by @ksaver http://identi.ca/ksaver
+fn_url_title() {
+	curl -s "$1" | awk 'BEGIN { ORS=" " }
+	  /<[Tt][Ii][Tt][Ll][Ee]>/,/<\/[Tt][Ii][Tt][Ll][Ee]>/ { print $0 }' | \
+	sed 's@.*<[Tt][Ii][Tt][Ll][Ee]>\(.*\)</[Tt][Ii][Tt][Ll][Ee]>.*$@\1@'
+}
+
 # This will output HTTP header field "Location".
 # So, give this function a short URL, and will ourput real URL.
 fn_real_urls() {
@@ -628,6 +636,9 @@ case ${param[0]} in
 	*$key_update) msg=$(fn_parameters 1 ${#param[@]})
 		if echo "$msg" | grep '%%' 1>/dev/null 2>&1 ; then
 			fn_paste
+		elif echo "$msg" | grep '^http[^ ]*' 1>/dev/null 2>&1 ; then
+			link_title=$(fn_url_title $msg)
+			msg="$link_title $msg"
 		fi
 		/usr/bin/env HOME=$conf_dir curl -s -n -d "source=$opt_from" \
 		  --data-urlencode "status=$msg" $site/$api/update.xml 1>/dev/null
@@ -689,7 +700,10 @@ case ${param[0]} in
 		    }")
 		# Format conversation
 		fn_conversation "$conversation_url" | fn_format conversation | \
-		  sed '/^$/d' | less $opt_pager_opts && exit 0 ;;
+		  sed "/^$/d;s/ \{10\}/        $col_emph|$col_norm/g" | \
+		  sed "s/ \{5\}/  $col_hash|$col_norm/g" | \
+		  less $opt_pager_opts
+		  exit 0 ;;
 	*$key_group|*$key_join|*$key_unjoin)
 		[[ "$site" == *twitter* ]] && usage no_impl
 		group=${param[1]}
