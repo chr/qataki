@@ -31,8 +31,9 @@ case $1 in
 	invalid_paste)
 		echo 'Invalid paste string or an invalid file.'
 		echo 'Valid string examples: %%syntax:file or %%file'
-		echo '"syntax" is optional: it is the language of "file" and can'
-		echo 'be one of those listed here: http://pastebin.com/api.php.'
+		echo 'If "file" is an image, it should have jpg, png or gif extension.'
+		echo '"syntax" is optional: if present it\'s the language of "file" and'
+		echo 'can be one of those listed here: http://pastebin.com/api.php.'
 		echo 'If paste string is OK, then there is something wrong with "file".'
 		exit 1 ;;
 	*)
@@ -120,10 +121,15 @@ NOTES:
 "message" is the message/status you want to send. Enclose it in single or
           double quotes. (Remember to escape them if you use them in your
           message: "It's \\"my message\\"" or 'It\\'s "my message"'.
-          It's possible to include a pastebin link in your message. If you
-          want to upload, for instance, a shell file and inlude it's link in
-          the message include it like "This is my script: %%bash:file.sh". It
-          will be replaced by "This is my script: http://pastebin.com/example".
+          It's possible to include a pastebin link or a link with a thumbnail
+          of an image in your message. If you want to upload, for instance, a
+          shell file and inlude it's link in the message include it like:
+          "A shell script: %%bash:file.sh".
+          It will be replaced by "A shell script: http://pastebin.com/example".
+          If "file" is an image (jpg, png or gif), it will be uploaded to
+          omploader.org and a link for the image will appear in the message:
+          "A photo: %%file.png".
+          It will be replaced by "A photo: http://omploader.org/example".
           The general "paste string" is %%syntax:file or %%file. In the former
           case the paste will be highlighted according to syntax. Available
           syntaxes are shown here: http://pastebin.com/api.php
@@ -589,12 +595,22 @@ fn_status_info() {
 
 fn_paste() {
 	paste_string=$(echo "$msg" | sed 's/[^%]*%%\([^ ]*\).*/\1/')
-	syntax=$(echo $paste_string | sed -n 's/\([^:][^:]\):.*/\1/p') # XXX
+	# $syntax shouldn't be done with ${paste_string%:*}
+	syntax=$(echo $paste_string | sed -n 's/\([^:][^:]\):.*/\1/p')
 	file=${paste_string#*:}
+	file_ext=$(echo ${file#*.} | tr '[A-Z]' '[a-z]')
 	[[ ! -s $file ]] && usage file_miss
 	[[ -n $syntax ]] && extra_paste="-d paste_format=$syntax"
-	paste=$(curl -s $extra_paste --data-urlencode "paste_code@$file" \
-	  http://pastebin.com/api_public.php)
+
+	case $file_ext in
+		jp*g|png|gif) # Upload file to omploader.org and return URL
+			paste=$(curl -s -F "file1=@$file" http://omploader.org/upload | \
+			  sed -n '/ file:/ s/.*\(http[^<]*\).*/\1/p') ;;
+		*) # Otherwise use pastebin.com
+			paste=$(curl -s $extra_paste --data-urlencode "paste_code@$file" \
+			  http://pastebin.com/api_public.php) ;;
+	esac
+
 	if echo "$paste" | grep ' ' 1>/dev/null 2>&1 ; then
 		usage invalid_paste
 	else
