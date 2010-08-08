@@ -819,8 +819,8 @@ case ${param[0]} in
 		exit 1;;
 	# TODO FLAG ??
 	*)	fn_prepare_auth # This is because there's no ${param[0]} (unless it's a '+')
-		last_stat=1
-		[[ ${param[0]} != '+' && -f $last_file ]] && last_stat=$(sed -n "1p" $last_file)
+		last_stat=$(sed -n "1p" $last_file 2>/dev/null)
+		[[ ${param[0]} = '+' || ! -n $last_stat ]] && last_stat=1
 
 		data_par="since_id=${last_stat}&count=$opt_max_stats"
 		#data="$site/$api/friends_timeline.xml$data_par"
