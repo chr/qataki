@@ -29,12 +29,14 @@ case $1 in
 		echo "That option needs a number <= $opt_max_stats"
 		exit 1 ;;
 	invalid_paste)
-		echo 'Invalid paste string or an invalid file.'
-		echo 'Valid string examples: %%syntax:file or %%file'
-		echo 'If "file" is an image, it should have jpg, png or gif extension.'
-		echo '"syntax" is optional: if present it\'s the language of "file" and'
-		echo 'can be one of those listed here: http://pastebin.com/api.php.'
-		echo 'If paste string is OK, then there is something wrong with "file".'
+	cat <<EOB
+		Invalid paste string or an invalid file.
+		Valid string examples: %%syntax:file or %%file
+		If "file" is an image, it should have jpg, png or gif extension.
+		"syntax" is optional: if present it's the language of "file" and
+		can be one of those listed here: http://pastebin.com/api.php.
+		If paste string is OK, then there is something wrong with "file".
+EOB
 		exit 1 ;;
 	*)
 		# It used to be cleaner, but configurable keys were added...
