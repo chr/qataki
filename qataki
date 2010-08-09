@@ -417,7 +417,7 @@ s@\(>*\)\([^<>]*\)\(<*\)@\1\
 \2\
 \3@g
 }' $tmp_file | sed '/^$/d;/[<>]/d' | \
-awk -v show_date=$opt_show_date \
+awk -v show_date=$opt_show_date -v curr_date=$(date +%s)  \
   ' /^(screen_name)|(text)|(in_reply_to_screen_name)|(following)|(created_at)$/,/^(\/screen_name)|(\/text)|(\/in_reply_to_screen_name)|(\/following)|(\/created_at)$/ {
 if ( $1 ~ /^screen_name$/ ) { sn=1 ; next }
 if ( $1 ~ /^following$/ ) { foll=1 ;  next }
@@ -434,10 +434,25 @@ if ( sn == 1 ) { sn_content=sn_content $0 }
 if ( txt == 1 ) { txt_content=txt_content $0 }
 if ( rep == 1 ) { rep_content=rep_content $0 }
 if ( foll == 1 ) { foll_mark=$0 }
-if ( date == 1 ) { status_date=$0 }
+if ( ( show_date == 1 ) && ( date == 1 ) ) {
+	orig_date=$0
+	"date -d \""orig_date"\" +%s" | getline status_date_sec
+	close("date -d \""orig_date"\" +%s")
+	past_seconds=curr_date-status_date_sec
+	minutes=int(past_seconds/60)
+	hours=int(minutes/60)
+	days=int(hours/24)
+	if ( minutes <= 1 ) { status_date="Less than a minute ago" }
+	else if ( ( minutes >= 1 ) && ( minutes < 60 ) ) { status_date=minutes " minutes ago" }
+	else if ( hours < 24 ) { { if ( hours > 1 ) { s_h="s" } }
+		minutes=int(minutes - hours * 60) ; status_date=hours " hour" s_h " " minutes " minutes ago" }
+	else if ( days < 30 ) { hours=int( hours - days * 24 ) ; status_date=days " days ago" }
+	else { status_date="More than 1 month ago" }
+	status_date="[" status_date "]"
+	}
 }
 /^\/status$/ {
-if ( show_date == 1 ) { txt_content=txt_content " [" status_date "]" }
+txt_content=txt_content " " status_date
 if (rep_content) { txt_content=txt_content " {context}" }
 if (foll_mark=="true") { foll_mark="###" } else { foll_mark="" }
 print "*" foll_mark sn_content "*: " txt_content
