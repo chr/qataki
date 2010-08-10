@@ -554,6 +554,10 @@ fn_url() {
 	}}'
 }
 
+fn_url_short() {
+	curl -G --data-urlencode "url=$1" http://cli.gs/api/v1/cligs/create
+}
+
 # Extract title from URL ($1).
 # Original idea by @ksaver http://identi.ca/ksaver
 fn_url_title() {
@@ -673,6 +677,7 @@ case ${param[0]} in
 			link_title=$(fn_url_title $msg)
 			msg="$link_title $msg"
 		fi
+
 		/usr/bin/env HOME=$conf_dir curl -s -n -d "source=$opt_from" \
 		  --data-urlencode "status=$msg" $site/$api/update.xml 1>/dev/null
 		exit 0 ;;
