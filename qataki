@@ -358,7 +358,7 @@ fi
 site=${site%/} # Be sure to leave out trailing slash
 cols=$(( $(tput cols) - 2 ))
 [[ $cols -le 10 ]] && cols=78 # If 'tput cols' fails
-if which par 1>/dev/null ; then
+if which par 1>/dev/null 2>&1 ; then
 	par_exe=1
 	b_cols=300 # Columns for $BROWSER. Note that it's not $cols
 else
@@ -366,11 +366,11 @@ else
 fi
 
 sort=sort # If gsort is present, we are on BSD and need gsort:
-if which gsort 1>/dev/null ; then
+if which gsort 1>/dev/null 2>&1 ; then
 	sort=gsort
 fi
 
-if which elinks 1>/dev/null ; then
+if which elinks 1>/dev/null 2>&1 ; then
 	browser=${BROWSER:-elinks}
 	render="elinks -dump -dump-width \$b_cols -eval 'set document.browse.margin_width = 1' -force-html -no-numbering -no-references"
 else
