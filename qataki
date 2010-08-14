@@ -55,9 +55,11 @@ by adding/changing key_*=OPTION in $conf_file (defaults after RESULT).
 
 OPTION    ARGUMENT           RESULT
 
-          [+]                Retrive messages from people you follow.
+          [+|$key_count]                Retrive messages from people you follow.
                              If you use the optional "+" argument, all statuses
                              will be displayed. Otherwise only new statuses.
+                             If you use $key_number (default: key_number=n) then print the
+                             number of new statuses to read.
 $key_public                            Retrive messages from public timeline.
                              Default: key_public=p
 $key_group         <GROUP>            Retrive messages from <GROUP timeline.
@@ -297,6 +299,7 @@ key_user=N key_search=S key_context=c key_group=g key_resend=R key_details=d
 key_dir_msg_send=M key_configure=k key_help=h key_Help=H key_prev=P
 key_alt_nick=n key_sn=s key_follow=f key_unfollow=F key_join=j key_unjoin=J
 key_delete=D key_like=a key_open=o key_comment=C key_block=b key_unblock=B
+key_number=n
 
 for i in $(grep -o "^\(key\|opt\)_[^ 	]*" $conf_file) ; do
 	eval $i
@@ -546,16 +549,24 @@ mv $last_file.tmp $last_file
 }
 
 # Prints URLs. XXX: gopher? ftp?
+#If shorten=1 will print the entire message with shortened URLS
 fn_url() {
-	awk '{
+	awk -v how=$1 ' BEGIN {
+	curl_call_start="curl -s -G --data-urlencode url=\""
+	curl_call_end="\" -d key=d8a413748aa7b34a191fc96d6c98dd1a -d appid=Qataki http://cli.gs/api/v1/cligs/create"
+	if (how == "short" ) { ORS=" " } }
+	{
 	url_re = "https?://"
 	for (i=1; i<=NF; i++) {
-			if (match($i, url_re)) { print $i }
+			if (match($i, url_re)) {
+				real_url=$i
+				if ( how == "short" ) {
+					curl_call_start real_url curl_call_end | getline url
+					close(curl_call_start real_url curl_call_end) }
+				else { url=real_url }
+				print url
+			} else { if ( how == "short" ) { print $i } }
 	}}'
-}
-
-fn_url_short() {
-	curl -G --data-urlencode "url=$1" http://cli.gs/api/v1/cligs/create
 }
 
 # Extract title from URL ($1).
@@ -568,6 +579,7 @@ fn_url_title() {
 
 # This will output HTTP header field "Location".
 # So, give this function a short URL, and will ourput real URL.
+# XXX: close() awk???
 fn_real_urls() {
 	awk ' BEGIN { ORS=" " }
 	/Status:/ {
@@ -593,6 +605,9 @@ fn_editor_update() {
 	message=$(tr '\n' ' ' < $tmp_status)
 	rm $tmp_status
 }
+
+#fn_bound() {
+#}
 
 fn_prepare_auth() {
 	site_name=${site/*:\/\/}
@@ -677,6 +692,10 @@ case ${param[0]} in
 			link_title=$(fn_url_title $msg)
 			msg="$link_title $msg"
 		fi
+
+		# XXX: True only for Identi.ca and Twitter
+		[[ ${#msg} -gt $opt_max_chars ]] && msg=$(echo "$msg" | fn_url short)
+		[[ ${#msg} -gt $opt_max_chars ]] && echo "Message too long." && exit 1
 
 		/usr/bin/env HOME=$conf_dir curl -s -n -d "source=$opt_from" \
 		  --data-urlencode "status=$msg" $site/$api/update.xml 1>/dev/null
@@ -845,7 +864,12 @@ case ${param[0]} in
 		data_par="since_id=${last_stat}&count=$opt_max_stats"
 		#data="$site/$api/friends_timeline.xml$data_par"
 		data="$site/$api/home_timeline.xml?$data_par"
-		fn_download && fn_last_status 1 ;;
+		fn_download
+		if [[ ${param[0]} != $key_number ]] ; then
+			fn_last_status 1
+		else
+			grep -c '<status>' $tmp_file ; exit
+		fi ;;
 esac
 
 fn_extract | fn_ol_list | fn_format | less $opt_pager_opts
