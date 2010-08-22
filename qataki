@@ -659,7 +659,7 @@ fn_paste() {
 trap "rm -f $conf_dir/.netrc" EXIT
 
 read parameters_line <<< $(echo " $@") # XXX portability :(
-while read -t 0.1 line ; do # XXX again :((
+while read -t 1 line ; do # XXX again :((
 	parameters_pipe="$parameters_pipe $line"
 done
 
