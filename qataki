@@ -55,7 +55,7 @@ by adding/changing key_*=OPTION in $conf_file (defaults after RESULT).
 
 OPTION    ARGUMENT           RESULT
 
-          [+|$key_count]                Retrive messages from people you follow.
+          [+|$key_number]                Retrive messages from people you follow.
                              If you use the optional "+" argument, all statuses
                              will be displayed. Otherwise only new statuses.
                              If you use $key_number (default: key_number=n) then print the
