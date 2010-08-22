@@ -51,15 +51,15 @@ then Identi.ca will be used. It is possible to use only 1 OPTION
 and, eventually, its ARGUMENT. If no option is passed, messages
 from people you follow will be retrived by default.
 Options have a default value, but it is possible to modify defaults
-by adding/changing key_*=OPTION in $conf_file (defaults after RESULT).
+by adding/changing key_*=VALUE in $conf_file (defaults after RESULT).
 
 OPTION    ARGUMENT           RESULT
 
-          [+|$key_number]                Retrive messages from people you follow.
+          [+|$key_number]              Retrive messages from people you follow.
                              If you use the optional "+" argument, all statuses
                              will be displayed. Otherwise only new statuses.
-                             If you use $key_number (default: key_number=n) then print the
-                             number of new statuses to read.
+                             If you use $key_number (default: key_number=e) then enumerate
+                             new statuses to read.
 $key_public                            Retrive messages from public timeline.
                              Default: key_public=p
 $key_group         <GROUP>            Retrive messages from <GROUP timeline.
@@ -67,6 +67,7 @@ $key_group         <GROUP>            Retrive messages from <GROUP timeline.
 $key_update         "message"          Update your status with a "message".
                              Default: key_update=u
 $key_update_w                            Type an update message in your \$EDITOR.
+                             (end message with ^D (that is Control-d)).
                              Default: key_update_w=U
 $key_mentions         [+]                Show notices where you are mentioned (@you).
                              If you use the optional "+" argument, all statuses
