@@ -864,6 +864,8 @@ case ${param[0]} in
 		data_par="since_id=${last_stat}&count=$opt_max_stats"
 		#data="$site/$api/friends_timeline.xml$data_par"
 		data="$site/$api/home_timeline.xml?$data_par"
+		# XXX: If $key_num is used, $tmp_file is overwritten, but it shouldn't
+		# because, e.g., it will lose references for replies.
 		fn_download
 		if [[ ${param[0]} != $key_number ]] ; then
 			fn_last_status 1
