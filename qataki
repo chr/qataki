@@ -239,7 +239,7 @@ fn_configuration() {
 
 	while [[ -z $v_pass ]] ; do
 		echo "Password:"
-		read v_pass
+		read -r v_pass
 	done
 
 	echo "Is $v_nick your default $v_site account? [Y/n]"
