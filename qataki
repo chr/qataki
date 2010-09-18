@@ -578,7 +578,7 @@ fn_url_title() {
 }
 
 # This will output HTTP header field "Location".
-# So, give this function a short URL, and will ourput real URL.
+# So, give this function a short URL, and will output real URL.
 # XXX: close() awk???
 fn_real_urls() {
 	awk ' BEGIN { ORS=" " }
