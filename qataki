@@ -164,7 +164,7 @@ NOTES:
           follow on http://micro.example.com). For convevience, try to keep
           ALIAS short.
 
-Authorisation is handled by curl with it's "-n" option. This means that a
+Authorisation is handled by curl with its "-n" option. This means that a
 .netrc file (located in \$conf_dir) is used. Qataki generates .netrc dinamically
 when it's run (a 0077 umask is used). When it exits .netrc is restored.
 
