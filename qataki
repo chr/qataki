@@ -359,6 +359,7 @@ if [[ $1 = $key_sn:* ]] ; then
 		fi
 	fi
 	site=$(awk '/^site(\t| )+'$site_alias'/ {print $3}' $conf_file)
+	site=${site%/}/api
 	last_file=$cache_dir/last.$site_alias
 	shift
 fi
