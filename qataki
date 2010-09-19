@@ -927,7 +927,7 @@ case ${param[0]} in
 			  "id=$group" "count=$opt_max_stats"
 		else
 			[[ ${param[0]} = *$key_join ]] && kind=join || kind=leave
-			curl_extra_opts='-X POST'
+			curl_extra_opts="-X POST --header 'Content-Length: 0'"
 			fn_download no_file $site/$api/groups/$kind/$group.xml && exit 0
 		fi ;;
 	*[$key_resend$key_delete$key_like])
@@ -952,7 +952,7 @@ case ${param[0]} in
 			[[ ${param[0]} = *$key_resend ]] && kind=retweet || kind=destroy
 		fi
 
-		curl_extra_opts='-X POST'
+		curl_extra_opts="-X POST --header 'Content-Length: 0'"
 
 		if [[ $auth = oauth ]] ; then
 			fn_oauth_params 'source' "$opt_from"
@@ -967,7 +967,7 @@ case ${param[0]} in
 		[[ $to_user = *[!a-zA-Z0-9]* ]] && { echo 'username is alphanum' ; exit 1 ; }
 		[[ -n ${param[2]} ]] && dir_msg=$(fn_parameters 2 ${#param[@]}) || { echo 'Enter a message' ; exit 1 ; }
 		#[[ "$site" == *twitter* ]] && unset api
-		curl_extra_opts='-X POST' # XXX: Really needed?
+		curl_extra_opts="-X POST --header 'Content-Length: 0'" # XXX: Is needed?
 
 		if [[ $auth = oauth ]] ; then
 			fn_oauth_params 'source' "$opt_from" 'user' "$to_user" 'text' "$dir_msg"
@@ -1003,7 +1003,7 @@ case ${param[0]} in
 			user_ident=screen_name
 		fi
 
-		curl_extra_opts='-X POST'
+		curl_extra_opts="-X POST --header 'Content-Length: 0'"
 
 		if [[ $auth = oauth ]] ; then
 			fn_oauth_params "$user_ident" "$user"
