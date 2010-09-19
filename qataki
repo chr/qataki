@@ -413,10 +413,8 @@ fn_download() {
 	{
 	case $1 in
 		no_file)
-			$curl -n $curl_extra_opts $api_url $api_params ;; #>/dev/null ;;
-			#$curl $curl_opts $api_url $api_params >/dev/null ;;
+			$curl $curl_opts $api_url $api_params >/dev/null ;;
 		file)
-			#$curl $curl_extra_opts -v $api_url $api_params ;; #> $tmp_file ;;
 			$curl $curl_opts $api_url $api_params > $tmp_file ;;
 		search)
 			$curl $curl_opts $api_url $api_params | \
