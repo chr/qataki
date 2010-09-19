@@ -29,7 +29,7 @@
 
 OAuth_nonce () {
 	# Return a nonce
-	$md5=$(which md5sum 2>/dev/null)
+	md5=$(which md5sum 2>/dev/null)
 	[[ -z $md5 ]] && md5=md5
 	$md5 <<< "$RANDOM-$(date +%s)" | cut -d' ' -f 1
 	}

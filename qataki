@@ -762,11 +762,12 @@ if [[ $site = *twitter* ]] ; then
 	oauth_consumer_secret=${oauth_cs}zEl2DLDxE6jz3PYog
 	if [[ -f $conf_dir/OAuth ]] ; then
 		source $conf_dir/OAuth
+	elif [[ -f OAuth ]] ; then
+		source OAuth
 	else
 		cat <<-EOB
 		Please copy the 'OAuth' file in $conf_dir/OAuth
-		You can find a copy of it at:
-		http://github.com/chr/qataki/raw/master/OAuth
+		You can find a copy of it at http://github.com/chr/qataki/
 EOB
 		exit 10
 	fi
