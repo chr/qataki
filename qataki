@@ -909,7 +909,7 @@ case ${param[0]} in
 		b_cols=$cols
 		status_num=${param[1]} tag_cont_re='.'
 		context_id=$(fn_status_info '/<status>/' '/<user>/' '<in_reply_to_status_id>')
-		conversation_url=$(curl -L -s "$site/notice/$context_id" | \
+		conversation_url=$(curl -L -s "${site%/api}/notice/$context_id" | \
 		  sed -n "/>in context</ { s/[^\"]*\"\([^#]*\).*/\1/ p
 		    }")
 		# Format conversation
