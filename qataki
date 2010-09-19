@@ -3,10 +3,13 @@
 # Qataki is free and unencumbered public domain software. For more
 # information see http://unlicense.org/ or the accompanying UNLICENSE file.
 
-# The OAuth bits in this script (mainly TO_* functions and the accompanying
-# OAuth file) are copyright (c) 2010 by Yu-Jie Lin:
+# The OAuth bits in this script (TO_* functions) and company from
+# qataki.utils file) are copyright (c) 2010 by Yu-Jie Lin:
 # http://blog.yjl.im/2010/05/bash-oauth.html
-# The copyright statement can be found in the 'OAuth' file.
+
+# OAuth_PE in qataki.utils file was replaced with some awk magic
+# by Heiner Steven's urlencode script:
+# http://www.shelldorado.com/scripts/cmds/urlencode
 
 # You can modify default options in $conf_file ($HOME/.qataki/qataki.conf)
 
