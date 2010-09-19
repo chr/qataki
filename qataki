@@ -758,10 +758,10 @@ if [[ $site = *twitter* ]] ; then
 	oauth_signature_method='HMAC-SHA1'
 	oauth_consumer_key=${oauth_ck}VId9R3YlrDVPSA
 	oauth_consumer_secret=${oauth_cs}zEl2DLDxE6jz3PYog
-	if [[ -f $conf_dir/qataki_utils.lib ]] ; then
-		source $conf_dir/qataki_utils.lib
-	elif [[ -f qataki_utils.lib ]] ; then
-		source qataki_utils.lib
+	if [[ -f $conf_dir/qataki.utils ]] ; then
+		source $conf_dir/qataki.utils
+	elif [[ -f qataki.utils ]] ; then
+		source qataki.utils
 	else
 		cat <<-EOB
 		Please copy the 'OAuth' file in $conf_dir/OAuth
