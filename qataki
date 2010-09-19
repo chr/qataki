@@ -7,12 +7,6 @@
 
 # You can modify default options in $conf_file ($HOME/.qataki/qataki.conf)
 
-source $HOME/.tcli.rc
-source $HOME/tests/tcli/OAuth.sh
-source $HOME/tests/tcli/TwitterOAuth.sh
-
-TO_init
-
 usage() {
 case $1 in
 	file_miss)
@@ -707,13 +701,38 @@ fn_parameters() {
 $key_dir_msg_send$key_delete$key_follow$key_unfollow$key_join$key_unjoin\
 $key_like$key_comment$key_block$key_unblock] ]] && fn_prepare_auth
 
-[[ $site = *twitter* ]] && auth=oauth || auth=basic
-
 fn_auth_header() {
-	auth_header=$(OAuth_authorization_header 'Authorization' 'http://api.twitter.com' '' '' "$1" "$2"  ${oauth_params[@]})
+	auth_header=$(OAuth_authorization_header 'Authorization' \
+	  'http://api.twitter.com' '' '' "$1" "$2"  ${oauth_params[@]})
 }
 
-# XXX: 1) Rewrite options parsing. 2) Make $site/$api etc. better.
+fn_oauth_params() {
+	oauth_params=( )
+	for (( i=2; i<=${#@} ; i=i+2 )) ; do
+		eval param_name=\$$(( i-1 )) param_val=\$$i
+		oauth_params[${#oauth_params[@]}]=$(OAuth_param "$param_name" "$param_val")
+	done
+}
+
+if [[ $site = *twitter* ]] ; then
+	auth=oauth
+	oauth_consumer_key=fOirkKnWy8eXni5RQBjG0A
+	oauth_consumer_secret=NrXPEk3APbCI0KetWzvKPjYPSqwjUycGBEL46WI
+	oauth_token='88505301-symeINu6Ls9RIYevgdBHMVFpNFG1lWXep2KZ6xErc'
+	oauth_token_secret='J5SmGZV4hCL1OLecqiQzdTjzoJ43Y4Lg72puBMVB2c'
+	source $HOME/.qataki/OAuth.sh
+	oauth_version='1.0'
+	oauth_signature_method='HMAC-SHA1'
+	oauth_basic_params=$(fn_oauth_params 'oauth_consumer_key' "$oauth_consumer_key" \
+	  'oauth_signature_method' '$oauth_signature_method' 'oauth_version' '$oauth_version')
+	#source $HOME/.tcli.rc
+	#source $HOME/tests/tcli/TwitterOAuth.sh
+
+	#TO_init
+
+fi
+
+# XXX: Rewrite options parsing.
 case ${param[0]} in
 	*$key_public)
 		data="$site/$api/public_timeline.xml?count=$opt_max_stats"
@@ -738,8 +757,7 @@ case ${param[0]} in
 
 		if [[ $auth = oauth ]] ; then
 			# XXX: This kind of array assign works only in bash...
-			oauth_params=( $(OAuth_param 'status' "$msg") )
-			oauth_params[${#oauth_params[@]}]=$(OAuth_param 'source' "$opt_from")
+			fn_oauth_params 'status' "$msg" 'source' "$opt_from"
 			fn_auth_header POST $site/$api/update.xml
 			curl_extra_opts="-H \"$auth_header\""
 		fi
@@ -754,8 +772,7 @@ case ${param[0]} in
 		fi
 
 		if [[ $auth = oauth ]] ; then
-			oauth_params=( $(OAuth_param 'since_id' "$last_stat") )
-			oauth_params[${#oauth_params[@]}]=$(OAuth_param 'count' "$opt_max_stats")
+			fn_oauth_params 'since_id' "$last_stat" 'count' "$opt_max_stats"
 			fn_auth_header POST $site/$api/mentions.xml
 			curl_extra_opts="-H \"$auth_header\""
 		fi
@@ -784,9 +801,8 @@ case ${param[0]} in
 		fi
 
 		if [[ $auth = oauth ]] ; then
-			oauth_params=( $(OAuth_param 'status' "${reply_status# }") )
-			oauth_params[${#oauth_params[@]}]=$(OAuth_param 'source' "$opt_from")
-			oauth_params[${#oauth_params[@]}]=$(OAuth_param 'in_reply_to_status_id' "$reply_to")
+			fn_oauth_params 'status' "${reply_status# }" 'source' "$opt_from" \
+			  'in_reply_to_status_id' "$reply_to"
 			fn_auth_header POST $site/$api/update.xml
 			curl_extra_opts="-H \"$auth_header\""
 		fi
@@ -799,8 +815,9 @@ case ${param[0]} in
 		nick=${param[1]}
 
 		if [[ $auth = oauth ]] ; then
-			oauth_params=( $(OAuth_param 'screen_name' "$nick") )
-			oauth_params[${#oauth_params[@]}]=$(OAuth_param 'count' "$opt_max_stats")
+			fn_oauth_params 'screen_name' "$nick" 'count' "$opt_max_stats"
+			#oauth_params=( $(OAuth_param 'screen_name' "$nick") )
+			#oauth_params[${#oauth_params[@]}]=$(OAuth_param 'count' "$opt_max_stats")
 			fn_auth_header GET $site/$api/user_timeline.xml
 			curl_extra_opts="-G -H \"$auth_header\""
 		fi
@@ -815,8 +832,7 @@ case ${param[0]} in
 		string=$(fn_parameters 1 ${#param[@]})
 
 		if [[ $auth = oauth ]] ; then
-			oauth_params=( $(OAuth_param 'rpp' "$opt_max_stats") )
-			oauth_params[${#oauth_params[@]}]=$(OAuth_param 'q' "$string")
+			fn_oauth_params 'rpp' "$opt_max_stats" 'q' "$string"
 			fn_auth_header GET $site/search.atom
 			curl_extra_opts="-H \"$auth_header\""
 		fi
@@ -875,7 +891,7 @@ case ${param[0]} in
 		curl_extra_opts='-X POST'
 
 		if [[ $auth = oauth ]] ; then
-			oauth_params=( $(OAuth_param 'source' "$opt_from") )
+			fn_oauth_params 'source' "$opt_from"
 			fn_auth_header POST $site/$api/$kind/$notice_id.xml
 			curl_extra_opts="-H \"$auth_header\""
 		fi
@@ -890,9 +906,7 @@ case ${param[0]} in
 		curl_extra_opts='-X POST' # XXX: Really needed?
 
 		if [[ $auth = oauth ]] ; then
-			oauth_params=( $(OAuth_param 'source' "$opt_from") )
-			oauth_params[${#oauth_params[@]}]=$(OAuth_param 'user' "$to_user")
-			oauth_params[${#oauth_params[@]}]=$(OAuth_param 'text' "$dir_msg")
+			fn_oauth_params 'source' "$opt_from" 'user' "$to_user" 'text' "$dir_msg"
 			fn_auth_header POST $site/direct_messages/new.xml
 			curl_extra_opts="-H \"$auth_header\""
 		fi
@@ -928,7 +942,7 @@ case ${param[0]} in
 		curl_extra_opts='-X POST'
 
 		if [[ $auth = oauth ]] ; then
-			oauth_params=( $(OAuth_param "$user_ident" "$user") )
+			fn_oauth_params "$user_ident" "$user"
 			fn_auth_header POST $site/$api/$kind.xml
 			curl_extra_opts="-H \"$auth_header\""
 		fi
@@ -964,8 +978,7 @@ case ${param[0]} in
 		# because, e.g., it will lose references for replies.
 
 		if [[ $auth = oauth ]] ; then
-			oauth_params=( $(OAuth_param 'since_id' "$last_stat") )
-			oauth_params[${#oauth_params[@]}]=$(OAuth_param 'count' "$opt_max_stats")
+			fn_oauth_params 'since_id' "$last_stat" 'count' "$opt_max_stats"
 			fn_auth_header GET $site/$api/home_timeline.xml
 			curl_extra_opts="-G -H \"$auth_header\""
 		fi
