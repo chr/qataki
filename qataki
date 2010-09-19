@@ -413,8 +413,8 @@ fn_download() {
 	{
 	case $1 in
 		no_file)
-			#$curl -n $curl_extra_opts $api_url $api_params ;; #>/dev/null ;;
-			$curl $curl_opts $api_url $api_params >/dev/null ;;
+			$curl -n $curl_extra_opts $api_url $api_params ;; #>/dev/null ;;
+			#$curl $curl_opts $api_url $api_params >/dev/null ;;
 		file)
 			#$curl $curl_extra_opts -v $api_url $api_params ;; #> $tmp_file ;;
 			$curl $curl_opts $api_url $api_params > $tmp_file ;;
@@ -760,10 +760,10 @@ if [[ $site = *twitter* ]] ; then
 	oauth_signature_method='HMAC-SHA1'
 	oauth_consumer_key=${oauth_ck}VId9R3YlrDVPSA
 	oauth_consumer_secret=${oauth_cs}zEl2DLDxE6jz3PYog
-	if [[ -f $conf_dir/OAuth ]] ; then
-		source $conf_dir/OAuth
-	elif [[ -f OAuth ]] ; then
-		source OAuth
+	if [[ -f $conf_dir/qataki_utils.lib ]] ; then
+		source $conf_dir/qataki_utils.lib
+	elif [[ -f qataki_utils.lib ]] ; then
+		source qataki_utils.lib
 	else
 		cat <<-EOB
 		Please copy the 'OAuth' file in $conf_dir/OAuth

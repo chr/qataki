@@ -45,7 +45,8 @@ OAuth_PE () {
 	# Any character other than [a-zA-Z0-9-._~] is converted into format %XX.
 	# 2>/dev/null was added in the case perl complains for something.
     [ -n "$1" ] && echo -n "$1" | \
-	  perl -p -e 's/([^A-Za-z0-9-._~])/sprintf("%%%02X", ord($1))/seg' 2>/dev/null
+	  $HOME/tests/urlencode
+	  #perl -p -e 's/([^A-Za-z0-9-._~])/sprintf("%%%02X", ord($1))/seg' 2>/dev/null
 }
 
 OAuth_PE_file () {
