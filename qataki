@@ -760,7 +760,16 @@ if [[ $site = *twitter* ]] ; then
 	oauth_signature_method='HMAC-SHA1'
 	oauth_consumer_key=${oauth_ck}VId9R3YlrDVPSA
 	oauth_consumer_secret=${oauth_cs}zEl2DLDxE6jz3PYog
-	source $HOME/.qataki/OAuth.sh
+	if [[ -f $conf_dir/OAuth ]] ; then
+		source $conf_dir/OAuth
+	else
+		cat <<-EOB
+		Please copy the 'OAuth' file in $conf_dir/OAuth
+		You can find a copy of it at:
+		http://github.com/chr/qataki/raw/master/OAuth
+EOB
+		exit 10
+	fi
 	oauth_token=$(grep ^oauth_token_twitter $conf_file)
 	oauth_token_secret=$(grep ^oauth_token_secret_twitter $conf_file)
 	eval oauth_token=${oauth_token#*=}
