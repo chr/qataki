@@ -3,6 +3,14 @@
 # Qataki is free and unencumbered public domain software. For more
 # information see http://unlicense.org/ or the accompanying UNLICENSE file.
 
+# The OAuth bits in this script (TO_* functions) and company from
+# qataki.utils file) are copyright (c) 2010 by Yu-Jie Lin:
+# http://blog.yjl.im/2010/05/bash-oauth.html
+
+# OAuth_PE in qataki.utils file was replaced with some awk magic
+# by Heiner Steven's urlencode script:
+# http://www.shelldorado.com/scripts/cmds/urlencode
+
 # You can modify default options in $conf_file ($HOME/.qataki/qataki.conf)
 
 usage() {
@@ -164,7 +172,7 @@ NOTES:
           follow on http://micro.example.com). For convevience, try to keep
           ALIAS short.
 
-Authorisation is handled by curl with it's "-n" option. This means that a
+Authorisation is handled by curl with its "-n" option. This means that a
 .netrc file (located in \$conf_dir) is used. Qataki generates .netrc dinamically
 when it's run (a 0077 umask is used). When it exits .netrc is restored.
 
@@ -191,8 +199,8 @@ conf_file=$conf_dir/qataki.conf
 cache_dir=$conf_dir/cache
 tmp_file=$cache_dir/tmp
 kill_file=$conf_dir/killfile
-twitter=http://twitter.com
-identica=http://identi.ca
+twitter=http://api.twitter.com/1
+identica=http://identi.ca/api
 
 umask 0077
 
@@ -310,7 +318,7 @@ opt_max_stats=${opt_max_stats:-30} opt_order=${opt_order:-default}
 opt_from=${opt_from:-Qataki} opt_show_date=${opt_show_date:-0}
 opt_kill=${opt_kill:-0}
 
-site=$identica api=api/statuses last_file=$cache_dir/last.dent
+site=$identica api=statuses last_file=$cache_dir/last.dent
 [[ $1 = i ]] && shift
 
 if [[ $1 = $key_alt_nick:* ]] ; then
@@ -322,7 +330,7 @@ else
 fi
 
 if [[ $1 = t ]] ; then
-	site=$twitter api=statuses last_file=$cache_dir/last.tweet
+	site=$twitter last_file=$cache_dir/last.tweet
 	if [[ $2 = $key_alt_nick:* ]] ; then
 		my_nick=$2 my_nick=${my_nick/n:}
 		last_file=$last_file.$my_nick
@@ -335,7 +343,7 @@ fi
 
 if [[ $1 = $key_sn:* ]] ; then
 	# Identi.ca is not present inside [[ ]] as it's the default value
-	# and will be overwritten anyway is "s:..." is specified
+	# and will be overwritten anyway if "s:..." is specified
 	[[ $site = *twitter* ]] && usage no_both
 	site_alias=$1 site_alias=${site_alias/s:}
 	if [[ -z $2 ]] ; then
@@ -351,6 +359,7 @@ if [[ $1 = $key_sn:* ]] ; then
 		fi
 	fi
 	site=$(awk '/^site(\t| )+'$site_alias'/ {print $3}' $conf_file)
+	site=${site%/}/api
 	last_file=$cache_dir/last.$site_alias
 	shift
 fi
@@ -375,11 +384,13 @@ fi
 
 if which elinks 1>/dev/null 2>&1 ; then
 	browser=${BROWSER:-elinks}
-	render="elinks -dump -dump-width \$b_cols -eval 'set document.browse.margin_width = 1' -force-html -no-numbering -no-references"
+	render="elinks -dump -dump-width \$b_cols -no-numbering -force-html \
+	  -eval 'set document.browse.margin_width = 1' -no-references"
 else
 	browser=${BROWSER:-lynx}
 	# There's a -nomargins option, but it's less readable
-	render="lynx -dump -width \$b_cols -force_html -stdin -display_charset=utf-8 -nonumbers -hiddenlinks=ignore -nolist"
+	render="lynx -dump -width \$b_cols -force_html -stdin \
+	  -display_charset=utf-8 -nonumbers -hiddenlinks=ignore -nolist"
 fi
 
 # Valid characters for for #hashes, @users, !groups
@@ -394,17 +405,29 @@ col_at='[1;35;40m'
 col_hash='[1;32;40m'
 col_bang='[1;31;40m'
 
-# When local function's $1 is 'filter', more passages are needed
+curl="eval /usr/bin/env HOME=$conf_dir curl"
+
+# When local function's $1=search, more passages are needed
 fn_download() {
-	{ if [[ "$1" != filter ]] ; then
-		/usr/bin/env HOME=$conf_dir curl -f -s -n "$data" > $tmp_file
-	else
-		/usr/bin/env HOME=$conf_dir curl -f -s -n --data-urlencode "q=$string" "$data" | \
-		  sed '1,/<status>/ { /Search/d ; };
-		  s@<\(/*\)title>@<\1text>@g;s@<\(/*\)entry>@<\1status>@g;
-		  s@<name>\([^< ][^< ]*\).*</name>@<screen_name>\1</screen_name>@' \
-		  > $tmp_file
-	fi ; } || exit 1
+	curl_opts="-f -s -n $curl_extra_opts"
+	api_url=$2
+	api_params=$(IFS='' ; for (( i=3; i<=${#@}; i++ )) ; do
+				eval printf "%s" "--data-urlencode\ \$$i\ "
+			done)
+	{
+	case $1 in
+		no_file)
+			$curl $curl_opts $api_url $api_params >/dev/null ;;
+		file)
+			$curl $curl_opts $api_url $api_params > $tmp_file ;;
+		search)
+			$curl $curl_opts $api_url $api_params | \
+			  sed '1,/<status>/ { /Search/d ; };
+			  s@<\(/*\)title>@<\1text>@g;s@<\(/*\)entry>@<\1status>@g;
+			  s@<name>\([^< ][^< ]*\).*</name>@<screen_name>\1</screen_name>@'\
+			    > $tmp_file ;;
+	esac
+	} || exit 1
 
 	# A file <= 3 lines (always sufficient?) is a file with an error
 	[[ $(wc -l < $tmp_file) -gt 3 ]] && return || exit 2
@@ -517,10 +540,10 @@ answ=$1 # This variable is always the notice (twit/dent) number.
 status_start=$(sed -n '/<status>/=' $tmp_file | sed -n ${answ}p)
 status_end=$(sed -n '/<\/status>/=' $tmp_file | sed -n ${answ}p)
 
+# Sometimes a status can have a new line: s@^[[:space:]]...
 sed 's/&lt;/</g;s/&gt;/>/g;s/&quot;/"/g' $tmp_file | \
 sed -n "$status_start,$status_end {
 s@<text>\([^<]*\)<*.*@<li>Status: \1@p
-# Sometimes a status can have a new line:
 s@^[[:space:]][[:space:]]*[^<[:space:]]\([^<][^<]*\)<*/.*@\1@p
 s@<screen_name>\(.*\)</screen_name>@<li>Nick: \1@p
 s@<name>\(.*\)</name>@<li>Name: \1@p
@@ -578,7 +601,7 @@ fn_url_title() {
 }
 
 # This will output HTTP header field "Location".
-# So, give this function a short URL, and will ourput real URL.
+# So, give this function a short URL, and will output real URL.
 # XXX: close() awk???
 fn_real_urls() {
 	awk ' BEGIN { ORS=" " }
@@ -600,9 +623,9 @@ fn_real_urls() {
 fn_editor_update() {
 	editor=${EDITOR:-vi}
 	tmp_status=${TMP:-/tmp}/qataki_$(id -u).$$
-	> $tmp_status
+	  > $tmp_status
 	eval $editor $opt_editor $tmp_status
-	message=$(tr '\n' ' ' < $tmp_status)
+	msg=$(tr '\n' ' ' < $tmp_status)
 	rm $tmp_status
 }
 
@@ -610,7 +633,7 @@ fn_editor_update() {
 #}
 
 fn_prepare_auth() {
-	site_name=${site/*:\/\/}
+	site_name=${site/*:\/\/} ; site_name=${site_name%/*}
 
 	# \(api.\)\?... shuld match api.twitter.com, so \(api.\)*...
 	grep "machine \(api.\)*$site_name login $my_nick" $conf_file \
@@ -665,10 +688,12 @@ done
 
 parameters="$parameters_line $parameters_pipe"
 
+# XXX: This shouldn't work in ksh93
 for i in $parameters ; do
 	param[${#param[@]}]=$i
 done
 
+# This is for pipes
 fn_parameters() {
 	for (( i=$1 ; i<$2 ; i++ )) ; do
 		last_param="$last_param ${param[$i]}"
@@ -681,11 +706,110 @@ fn_parameters() {
 $key_dir_msg_send$key_delete$key_follow$key_unfollow$key_join$key_unjoin\
 $key_like$key_comment$key_block$key_unblock] ]] && fn_prepare_auth
 
-# XXX: 1) Rewrite options parsing. 2) Make $site/$api etc. better.
+fn_auth_header() {
+	auth_header=$(OAuth_authorization_header 'Authorization' \
+	  'http://api.twitter.com' '' '' "$1" "$2"  ${oauth_params[@]})
+}
+
+fn_oauth_params() {
+	oauth_params=( )
+	for (( i=2; i<=${#@} ; i=i+2 )) ; do
+		eval param_name=\$$(( i-1 )) param_val=\$$i
+		oauth_params[${#oauth_params[@]}]=$(OAuth_param "$param_name" "$param_val")
+	done
+}
+
+TO_extract_value() {
+	# $1 key name
+	# $2 string to find
+	egrep -o "$1=[a-zA-Z0-9-]*" <<< "$2" | cut -d\= -f 2
+}
+
+TO_access_token_helper() {
+	# Help guide user to get access token
+	local resp PIN
+	# Request Token
+	local auth_header="$(_OAuth_authorization_header 'Authorization' 'http://api.twitter.com/' "$oauth_consumer_key" "$oauth_consumer_secret" '' '' "$oauth_signature_method" "$oauth_version" "$(OAuth_nonce)" "$(OAuth_timestamp)" 'POST' "$T_REQUEST_TOKEN" "$(OAuth_param 'oauth_callback' 'oob')"), $(OAuth_param_quote 'oauth_callback' 'oob')"
+	resp=$(curl -k -s -d '' -H "$auth_header" "$T_REQUEST_TOKEN")
+	TO_rval=$?
+	[[ $? != 0 ]] && return $TO_rval
+	local _oauth_token=$(TO_extract_value 'oauth_token' "$resp")
+	local _oauth_token_secret=$(TO_extract_value 'oauth_token_secret' "$resp")
+
+	echo "Please go to the following link to get the PIN :"
+	echo "  ${T_AUTHORIZE_TOKEN}?$_oauth_token"
+
+	read -p 'PIN: ' PIN
+
+	# Access Token
+	local auth_header="$(_OAuth_authorization_header 'Authorization' 'http://api.twitter.com/' "$oauth_consumer_key" "$oauth_consumer_secret" "$_oauth_token" "$_oauth_token_secret" "$oauth_signature_method" "$oauth_version" "$(OAuth_nonce)" "$(OAuth_timestamp)" 'POST' "$T_ACCESS_TOKEN" "$(OAuth_param 'oauth_verifier' "$PIN")"), $(OAuth_param_quote 'oauth_verifier' "$PIN")"
+
+	resp=$(curl -k -s -d "" -H "$auth_header" "$T_ACCESS_TOKEN")
+	TO_rval=$?
+	[[ $? != 0 ]] && return $TO_rval
+
+	TO_ret=(
+		$(TO_extract_value 'oauth_token' "$resp")
+		$(TO_extract_value 'oauth_token_secret' "$resp")
+		$(TO_extract_value 'user_id' "$resp")
+		$(TO_extract_value 'screen_name' "$resp")
+		)
+}
+
+if [[ $site = *twitter* ]] ; then
+	auth=oauth ; oauth_version='1.0'
+	oauth_ck=TZwBrnCnAQn ; oauth_cs=BovVTVLz8bi0HGTVLl2s3b3
+	oauth_signature_method='HMAC-SHA1'
+	oauth_consumer_key=${oauth_ck}X6OjYuqiaIw
+	oauth_consumer_secret=${oauth_cs}J4U3khDoUqQPkjQ5u9mI
+	if [[ -f $conf_dir/qataki.utils ]] ; then
+		source $conf_dir/qataki.utils
+	elif [[ -f qataki.utils ]] ; then
+		source qataki.utils
+	else
+		cat <<-EOB
+		Please copy the 'OAuth' file in $conf_dir/OAuth
+		You can find a copy of it at http://github.com/chr/qataki/
+EOB
+		exit 10
+	fi
+	oauth_token=$(grep ^oauth_token_twitter $conf_file)
+	oauth_token_secret=$(grep ^oauth_token_secret_twitter $conf_file)
+	eval oauth_token=${oauth_token#*=}
+	eval oauth_token_secret=${oauth_token_secret#*=}
+	if [[ -z $oauth_token || -z $oauth_token_secret ]] ; then
+		T_REQUEST_TOKEN='https://api.twitter.com/oauth/request_token'
+		T_AUTHORIZE_TOKEN='http://chr.tx0.org/qataki/oauth'
+		T_ACCESS_TOKEN='https://api.twitter.com/oauth/access_token'
+		TO_access_token_helper
+		if (( $? == 0 )); then
+			oauth_token=${TO_ret[0]}
+			oauth_token_secret=${TO_ret[1]}
+			echo "oauth_token_twitter='${TO_ret[0]}'" >> $conf_file
+			echo "oauth_token_secret_twitter='${TO_ret[1]}'" >> $conf_file
+		else
+			echo 'Unable to get access token'
+			exit 1
+		fi
+	fi
+
+	oauth_basic_params=$(fn_oauth_params 'oauth_consumer_key' "$oauth_consumer_key" \
+	  'oauth_signature_method' '$oauth_signature_method' 'oauth_version' '$oauth_version')
+
+fi
+
+# XXX: Rewrite options parsing.
 case ${param[0]} in
-	*$key_public)	data="$site/$api/public_timeline.xml?count=$opt_max_stats"
-		fn_download ;;
-	*$key_update) msg=$(fn_parameters 1 ${#param[@]})
+	*$key_public)
+		data="$site/$api/public_timeline.xml?count=$opt_max_stats"
+		fn_download file $site/$api/public_timeline.xml ;;
+	*[$key_update$key_update_w])
+		if [[ ${param[0]} = $key_update ]] ; then
+			msg=$(fn_parameters 1 ${#param[@]})
+		else
+			msg= ; fn_editor_update
+		fi
+
 		if echo "$msg" | grep '%%' 1>/dev/null 2>&1 ; then
 			fn_paste
 		elif echo "$msg" | grep '^http[^ ]*' 1>/dev/null 2>&1 ; then
@@ -697,62 +821,97 @@ case ${param[0]} in
 		[[ ${#msg} -gt $opt_max_chars ]] && msg=$(echo "$msg" | fn_url short)
 		[[ ${#msg} -gt $opt_max_chars ]] && echo "Message too long." && exit 1
 
-		/usr/bin/env HOME=$conf_dir curl -s -n -d "source=$opt_from" \
-		  --data-urlencode "status=$msg" $site/$api/update.xml 1>/dev/null
-		exit 0 ;;
-	*$key_update_w) message= ; fn_editor_update
-		/usr/bin/env HOME=$conf_dir curl -s -n -d "source=$opt_from" \
-		  --data-urlencode "status=$message" $site/$api/update.xml 1>/dev/null
+		if [[ $auth = oauth ]] ; then
+			# XXX: This kind of array assign works only in bash...
+			fn_oauth_params 'status' "$msg" 'source' "$opt_from"
+			fn_auth_header POST $site/$api/update.xml
+			curl_extra_opts="-H \"$auth_header\""
+		fi
+
+		fn_download no_file $site/$api/update.xml \
+		  "source=$opt_from" "status=\"$msg\""
 		exit 0 ;;
 	*$key_mentions)
 		if [[ ${param[1]} != '+' && -f $last_file ]] ; then
 			last_stat=$(sed -n "2p" $last_file)
 			[[ $last_stat = *[0-9]* ]] || last_stat=1
 		fi
-		data_par="since_id=${last_stat}&count=$opt_max_stats"
-		data="$site/$api/mentions.xml?$data_par"
-		fn_download && fn_last_status 2 ;;
-	*$key_reply|*$key_comment)
-		message=$(fn_parameters 2 ${#param[@]})
-		[[ -z ${param[1]} || ${param[1]} = *[!0-9]* ]] && { echo 'Select a number' && exit 1 ; }
+
+		if [[ $auth = oauth ]] ; then
+			fn_oauth_params 'since_id' "$last_stat" 'count' "$opt_max_stats"
+			fn_auth_header POST $site/$api/mentions.xml
+			curl_extra_opts="-H \"$auth_header\""
+		fi
+
+		fn_download file $site/$api/mentions.xml \
+		  "since_id=$last_stat" "count=$opt_max_stats" && fn_last_status 2 ;;
+	*[$key_reply$key_comment])
+		msg=$(fn_parameters 2 ${#param[@]})
+
+		if [[ -z ${param[1]} || ${param[1]} = *[!0-9]* ]] ; then
+			echo 'Select a number' && exit 1
+		fi
 
 		status_num=${param[1]} tag_cont_re='.'
 		reply_to=$(fn_status_info '/<status>/' '/<user>/' '<id>')
 		user_name=$(fn_status_info '/<user>/' '/<status>/' '<screen_name>')
+
 		if [[ ${param[0]} = $key_comment ]] ; then
 			comment=$(fn_status_info '/<status>/' '/<user>/' '<text>' | \
 			  sed 's/!\([^[:space:]][^[:space:]]*\)/#\1/g')
 			[[ $site = *twitter* ]] && resend=RT || resend=RD
-			reply_status="$message $resend @$user_name $comment"
+			reply_status="$msg $resend @$user_name $comment"
 		else
-			[[ -z $message ]] && { echo 'Message?' ; exit 1 ; }
-			reply_status="@$user_name $message"
+			[[ -z $msg ]] && { echo 'Message?' ; exit 1 ; }
+			reply_status="@$user_name $msg"
+		fi
+
+		if [[ $auth = oauth ]] ; then
+			fn_oauth_params 'status' "${reply_status# }" 'source' "$opt_from" \
+			  'in_reply_to_status_id' "$reply_to"
+			fn_auth_header POST $site/$api/update.xml
+			curl_extra_opts="-H \"$auth_header\""
 		fi
 
 		# XXX: @file is recognised by curl. Problems?
-		/usr/bin/env HOME=$conf_dir curl -s -n -d "source=$opt_from" \
-		  --data-urlencode "status=${reply_status# }" \
-		  -d "in_reply_to_status_id=$reply_to" $site/$api/update.xml 1>/dev/null
+		fn_download no_file $site/$api/update.xml "source=$opt_from" \
+		  "status=\"${reply_status# }\"" "in_reply_to_status_id=$reply_to"
 		exit 0 ;;
-	*$key_user) [[ "$site" == *twitter* ]] && site=http://api.twitter.com/1
+	*$key_user)
 		nick=${param[1]}
-		data="$site/$api/user_timeline.xml?screen_name=${nick}&count=$opt_max_stats"
-		fn_download ;;
+
+		if [[ $auth = oauth ]] ; then
+			fn_oauth_params 'screen_name' "$nick" 'count' "$opt_max_stats"
+			#oauth_params=( $(OAuth_param 'screen_name' "$nick") )
+			#oauth_params[${#oauth_params[@]}]=$(OAuth_param 'count' "$opt_max_stats")
+			fn_auth_header GET $site/$api/user_timeline.xml
+			curl_extra_opts="-G -H \"$auth_header\""
+		fi
+
+		fn_download file $site/$api/user_timeline.xml \
+		  "screen_name=$nick" "count=$opt_max_stats" ;;
 	*$key_search)
 		if [[ "$site" == *twitter* ]] ; then
 			site=http://search.twitter.com
-		else
-			site=$identica/api
 		fi
+
 		string=$(fn_parameters 1 ${#param[@]})
-		data="$site/search.atom?rpp=$opt_max_stats"
-		fn_download filter ;;
-	*$key_context) [[ "$site" == *twitter* ]] && usage no_impl
+
+		if [[ $auth = oauth ]] ; then
+			fn_oauth_params 'rpp' "$opt_max_stats" 'q' "$string"
+			fn_auth_header GET $site/search.atom
+			curl_extra_opts="-H \"$auth_header\""
+		fi
+
+		fn_download search $site/search.atom \
+		  "rpp=$opt_max_stats" "q=$string" ;;
+	*$key_context)
+		[[ "$site" == *twitter* ]] && usage no_impl
 		# Retrive conversation URL from status id
 		b_cols=$cols
 		status_num=${param[1]} tag_cont_re='.'
-		context_id=$(fn_status_info '/<status>/' '/<user>/' '<in_reply_to_status_id>')
-		conversation_url=$(curl -L -s "$site/notice/$context_id" | \
+		context_id=$(fn_status_info '/<status>/' '/<user>/' '<id>')
+		conversation_url=$(curl -L -s "${site%/api}/notice/$context_id" | \
 		  sed -n "/>in context</ { s/[^\"]*\"\([^#]*\).*/\1/ p
 		    }")
 		# Format conversation
@@ -761,20 +920,19 @@ case ${param[0]} in
 		  sed "s/ \{5\}/  $col_hash|$col_norm/g" | \
 		  less $opt_pager_opts
 		  exit 0 ;;
-	*$key_group|*$key_join|*$key_unjoin)
+	*[$key_group$key_join$key_unjoin])
 		[[ "$site" == *twitter* ]] && usage no_impl
 		group=${param[1]}
-		api=api/statusnet
+		api=statusnet
 		if [[ ${param[0]} = *$key_group ]] ; then
-			data="$site/$api/groups/timeline.xml?id=$group&count=$opt_max_stats"
-			fn_download
+			fn_download file $site/$api/groups/timeline.xml \
+			  "id=$group" "count=$opt_max_stats"
 		else
 			[[ ${param[0]} = *$key_join ]] && kind=join || kind=leave
-			data="$site/$api/groups/$kind/$group.xml"
-			/usr/bin/env HOME=$conf_dir curl -X POST -f -s -n "$data" \
-			  1>/dev/null && exit 0
+			curl_extra_opts="-X POST --header 'Content-Length: 0'"
+			fn_download no_file $site/$api/groups/$kind/$group.xml && exit 0
 		fi ;;
-	*$key_resend|*$key_delete|*$key_like)
+	*[$key_resend$key_delete$key_like])
 		if grep '<feed ' $tmp_file 1>/dev/null ; then
 		re1='$' re2=':' # This case is when file returned is Atom
 		else
@@ -784,44 +942,56 @@ case ${param[0]} in
 		status_num=${param[1]} tag_cont_re='.'
 		notice_id=$(fn_status_info '/<status>/' "$re1" "$re2")
 
-		if [[ "$site" == *twitter* ]] ; then
-			site=http://api.twitter.com/1
-		fi
+		#if [[ "$site" == *twitter* ]] ; then
+		#	site=http://api.twitter.com/1
+		#fi
 
 		if [[ ${param[0]} = *$key_like ]] ; then
-			[[ "$site" == *twitter* ]] && api=favorites || api=api/favorites
+			api=favorites
+			#[[ "$site" == *twitter* ]] && api=favorites || api=api/favorites
 			kind=create
 		else
 			[[ ${param[0]} = *$key_resend ]] && kind=retweet || kind=destroy
 		fi
 
-		/usr/bin/env HOME=$conf_dir curl -f -s -n -X POST \
-		  -d "source=$opt_from" \
-		  "$site/$api/$kind/$notice_id.xml" 1>/dev/null
+		curl_extra_opts="-X POST --header 'Content-Length: 0'"
+
+		if [[ $auth = oauth ]] ; then
+			fn_oauth_params 'source' "$opt_from"
+			fn_auth_header POST $site/$api/$kind/$notice_id.xml
+			curl_extra_opts="-H \"$auth_header\""
+		fi
+
+		fn_download no_file $site/$api/$kind/$notice_id.xml "source=$opt_from"
 		exit 0 ;;
-	*$key_dir_msg_send) to_user=${param[1]} # XXX: FIX URL
+	*$key_dir_msg_send)
+		to_user=${param[1]} # XXX: FIX URL
 		[[ $to_user = *[!a-zA-Z0-9]* ]] && { echo 'username is alphanum' ; exit 1 ; }
 		[[ -n ${param[2]} ]] && dir_msg=$(fn_parameters 2 ${#param[@]}) || { echo 'Enter a message' ; exit 1 ; }
-		[[ "$site" == *twitter* ]] && unset api
-		/usr/bin/env HOME=$conf_dir curl -n -X POST -d "source=$opt_from" \
-		  --data-urlencode "user=$to_user" --data-urlencode "text=$dir_msg" \
-		  "$site/api/direct_messages/new.xml" 1>/dev/null
-		echo "$site/api/direct_messages/new.xml"
+		#[[ "$site" == *twitter* ]] && unset api
+		curl_extra_opts="-X POST --header 'Content-Length: 0'" # XXX: Is needed?
+
+		if [[ $auth = oauth ]] ; then
+			fn_oauth_params 'source' "$opt_from" 'user' "$to_user" 'text' "$dir_msg"
+			fn_auth_header POST $site/direct_messages/new.xml
+			curl_extra_opts="-H \"$auth_header\""
+		fi
+
+		fn_download no_file $site/direct_messages/new.xml \
+		  "source=$opt_from" "user=$to_user" "text=$dir_msg"
 		exit 0 ;;
 	*$key_details)
-		grep '<verified>' $tmp_file 1>/dev/null || site=$identica # verif -> tw
+		# XXX: What was next line for???
+		#grep '<verified>' $tmp_file 1>/dev/null || site=$identica # verif -> tw
 		fn_details ${param[1]} && exit 0 ;;
-	*$key_configure)	fn_configuration ;;
-	*$key_help|*$key_Help) usage ;;
+	*$key_configure)
+		fn_configuration ;;
+	*[$key_help$key_Help])
+		usage ;;
 	*$key_prev) : ;; # Do nothing: Messages are already in $tmp_file
 	*[$key_follow$key_unfollow$key_block$key_unblock])
 		# XXX: block API issues.
 		[[ ${param[0]} = [$key_follow$key_unfollow] ]] && api=friendships || api=blocks
-		if [[ "$site" == *twitter* ]] ; then
-			site=http://api.twitter.com/1
-		else
-			api=api/$api
-		fi
 
 		[[ ${param[0]} = *[$key_follow$key_block] ]] && kind=create || kind=destroy
 
@@ -829,13 +999,21 @@ case ${param[0]} in
 			# It's a number and probably not a username
 			status_num=${param[1]} tag_cont_re='.'
 			user=$(fn_status_info '/<user>/' '/<\/user>/' '<id>')
-			data_par="user_id=$user"
+			user_ident=user_id
 		else
 			user=${param[1]}
-			data_par="screen_name=$user"
+			user_ident=screen_name
 		fi
-		data="$site/$api/$kind.xml?$data_par"
-		/usr/bin/env HOME=$conf_dir curl -s -X POST -n "$data" 1>/dev/null
+
+		curl_extra_opts="-X POST --header 'Content-Length: 0'"
+
+		if [[ $auth = oauth ]] ; then
+			fn_oauth_params "$user_ident" "$user"
+			fn_auth_header POST $site/$api/$kind.xml
+			curl_extra_opts="-H \"$auth_header\""
+		fi
+
+		fn_download no_file $site/$api/$kind.xml "$user_ident=$user"
 		exit 0 ;;
 	*$key_open)
 		if [[ ${param[1]} != *[a-zA-Z]* && ${param[1]} -le $opt_max_stats ]] ; then
@@ -857,16 +1035,22 @@ case ${param[0]} in
 		[[ -z $url ]] && echo 'No URL' || eval $browser $url
 		exit 1;;
 	# TODO FLAG ??
-	*)	fn_prepare_auth # This is because there's no ${param[0]} (unless it's a '+')
+	*)	fn_prepare_auth # Because there's no ${param[0]} (unless it's a '+')
 		last_stat=$(sed -n "1p" $last_file 2>/dev/null)
 		[[ ${param[0]} = '+' || ! -n $last_stat ]] && last_stat=1
 
-		data_par="since_id=${last_stat}&count=$opt_max_stats"
 		#data="$site/$api/friends_timeline.xml$data_par"
-		data="$site/$api/home_timeline.xml?$data_par"
 		# XXX: If $key_num is used, $tmp_file is overwritten, but it shouldn't
 		# because, e.g., it will lose references for replies.
-		fn_download
+
+		if [[ $auth = oauth ]] ; then
+			fn_oauth_params 'since_id' "$last_stat" 'count' "$opt_max_stats"
+			fn_auth_header GET $site/$api/home_timeline.xml
+			curl_extra_opts="-G -H \"$auth_header\""
+		fi
+
+		fn_download file $site/$api/home_timeline.xml \
+		  "since_id=$last_stat" "count=$opt_max_stats"
 		if [[ ${param[0]} != $key_number ]] ; then
 			fn_last_status 1
 		else
