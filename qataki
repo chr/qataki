@@ -758,10 +758,10 @@ TO_access_token_helper() {
 
 if [[ $site = *twitter* ]] ; then
 	auth=oauth ; oauth_version='1.0'
-	oauth_ck=5HU3imtp ; oauth_cs=hQYeyKLczJKazQ9zAgl0Erow
+	oauth_ck=TZwBrnCnAQn ; oauth_cs=BovVTVLz8bi0HGTVLl2s3b3
 	oauth_signature_method='HMAC-SHA1'
-	oauth_consumer_key=${oauth_ck}VId9R3YlrDVPSA
-	oauth_consumer_secret=${oauth_cs}zEl2DLDxE6jz3PYog
+	oauth_consumer_key=${oauth_ck}X6OjYuqiaIw
+	oauth_consumer_secret=${oauth_cs}J4U3khDoUqQPkjQ5u9mI
 	if [[ -f $conf_dir/qataki.utils ]] ; then
 		source $conf_dir/qataki.utils
 	elif [[ -f qataki.utils ]] ; then
