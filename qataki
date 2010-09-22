@@ -561,7 +561,7 @@ s@<source>\(.*\)</source>@<li>From: \1@p
 # both <status> and <user> have an <id>, <status> always comes first.)
 # Then, update $last file with this new value.
 # The argument passed to this function is the kind of <id> on which we
-# we are interested on: 1 => home_timeline; 2 => mentions
+# are interested on: 1 => home_timeline; 2 => mentions; 3 => public timeline
 fn_last_status() {
 last=$(sed -n '/<id>/p' $tmp_file | \
   sed -n '1s@[[:space:]]*<id>\([^<]*\)</id>@\1@p')
@@ -801,8 +801,11 @@ fi
 # XXX: Rewrite options parsing.
 case ${param[0]} in
 	*$key_public)
+		last_stat=$(sed -n "3p" $last_file 2>/dev/null)
+		[[ ${param[1]} = '+' || ! -n $last_stat ]] && last_stat=1
+
 		data="$site/$api/public_timeline.xml?count=$opt_max_stats"
-		fn_download file $site/$api/public_timeline.xml ;;
+		fn_download file $site/$api/public_timeline.xml && fn_last_status 3 ;;
 	*[$key_update$key_update_w])
 		if [[ ${param[0]} = $key_update ]] ; then
 			msg=$(fn_parameters 1 ${#param[@]})
@@ -832,10 +835,8 @@ case ${param[0]} in
 		  "source=$opt_from" "status=\"$msg\""
 		exit 0 ;;
 	*$key_mentions)
-		if [[ ${param[1]} != '+' && -f $last_file ]] ; then
-			last_stat=$(sed -n "2p" $last_file)
-			[[ $last_stat = *[0-9]* ]] || last_stat=1
-		fi
+		last_stat=$(sed -n "2p" $last_file 2>/dev/null)
+		[[ ${param[1]} = '+' || ! -n $last_stat ]] && last_stat=1
 
 		if [[ $auth = oauth ]] ; then
 			fn_oauth_params 'since_id' "$last_stat" 'count' "$opt_max_stats"
