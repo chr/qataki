@@ -53,29 +53,28 @@ EOB
 
 $(basename $0) [i|t|s:<SITE>] [n:<NICK>] [<OPTION> [<ARGUMENT>]]
 
-The first (optional) flag can be: i (identi.ca) OR t (twitter) or
-s:<SITE> (see below). If none of of these three flags are given,
+The first (optional) flag can be: i (identi.ca) OR t (twitter)OR
+s:<SITE> (see below). If none of these three flags are given,
 then Identi.ca will be used. It is possible to use only 1 OPTION
 and, eventually, its ARGUMENT. If no option is passed, messages
-from people you follow will be retrived by default.
+from people you follow will be retrieved by default.
 Options have a default value, but it is possible to modify defaults
 by adding/changing key_*=VALUE in $conf_file (defaults after RESULT).
 
 OPTION    ARGUMENT           RESULT
 
-          [+|$key_number]              Retrive messages from people you follow.
+          [+|$key_number]              Retrieve messages from people you follow.
                              If you use the optional "+" argument, all statuses
                              will be displayed. Otherwise only new statuses.
                              If you use $key_number (default: key_number=e) then enumerate
                              new statuses to read.
-$key_public                            Retrive messages from public timeline.
+$key_public                            Retrieve messages from public timeline.
                              Default: key_public=p
-$key_group         <GROUP>            Retrive messages from <GROUP timeline.
+$key_group         <GROUP>            Retrieve messages from <GROUP timeline.
                              Default: key_group=g
 $key_update         "message"          Update your status with a "message".
                              Default: key_update=u
 $key_update_w                            Type an update message in your \$EDITOR.
-                             (end message with ^D (that is Control-d)).
                              Default: key_update_w=U
 $key_mentions         [+]                Show notices where you are mentioned (@you).
                              If you use the optional "+" argument, all statuses
@@ -135,7 +134,7 @@ NOTES:
           message: "It's \\"my message\\"" or 'It\\'s "my message"'.
           It's possible to include a pastebin link or a link with a thumbnail
           of an image in your message. If you want to upload, for instance, a
-          shell file and inlude it's link in the message include it like:
+          shell file and inlude its link in the message include it like:
           "A shell script: %%bash:file.sh".
           It will be replaced by "A shell script: http://pastebin.com/example".
           If "file" is an image (jpg, png or gif), it will be uploaded to
@@ -147,7 +146,7 @@ NOTES:
           syntaxes are shown here: http://pastebin.com/api.php
 <NUMBER>  is the tweet/dent number displayed on the left when you run
           "$(basename $0) [i|t|s<SITE>] [n:<NICK>] [N <USER>]".
-<GROUP>   is the name of a Identi.ca/StatusNet group.
+<GROUP>   is the name of an Identi.ca/StatusNet group.
 <NICK>    is an alternate nickname. You have to pass *alternate* nicknames
           on the command line as n:<NICK>. On the contrary, you don't have
           to specify your *default* nickname. For this, your default nick
@@ -157,7 +156,7 @@ NOTES:
           default_user_SERVICE=YOUR_DEFAULT_NICK
 
           where "SERVICE" can be identica, twitter or <SITE> (see below)
-          and YOUR_DEFAULT_NICK is... your default nick on SERVICE.
+          and YOUR_DEFAULT_NICK is... your default nickname on SERVICE.
 <USER>    is a user's nickname (AKA screen_name; no spaces).
 <SITE>    is an alias for a StatusNet compatible site. This alias is
           the second field of a line on $conf_file structured like:
@@ -173,8 +172,9 @@ NOTES:
           ALIAS short.
 
 Authorisation is handled by curl with its "-n" option. This means that a
-.netrc file (located in \$conf_dir) is used. Qataki generates .netrc dinamically
+.netrc file (located in $conf_dir) is used. Qataki generates .netrc dinamically
 when it's run (a 0077 umask is used). When it exits .netrc is restored.
+(Note that your \$HOME/.netrc won't be touched.)
 
 When you run qataki with the "k" option, you can add your username and password
 to $conf_file. If you ever need to do it by hand, its syntax is:
