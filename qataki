@@ -291,7 +291,7 @@ if [[ ! -f $conf_file ]] ; then
 		opt_max_chars=140     # Max characters on update messages
 		opt_max_stats=30      # Max number of statuses to display
 		opt_editor=           # Options for your $EDITOR
-		opt_order=default     # 'dafault' -> as website; 'date' -> chronological
+		opt_order=default     # 'default' -> as website; 'date' -> chronological
 		opt_show_date=0       # If = 1 dates will be displayed with statuses
 		opt_kill=0            # If = 1 notices that contain strings from
 		                      #        $kill_file will be grepped out
