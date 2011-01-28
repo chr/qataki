@@ -389,8 +389,8 @@ if which elinks 1>/dev/null 2>&1 ; then
 else
 	browser=${BROWSER:-lynx}
 	# There's a -nomargins option, but it's less readable
-	render="lynx -dump -width \$b_cols -force_html -stdin \
-	  -display_charset=utf-8 -nonumbers -hiddenlinks=ignore -nolist"
+	render="lynx -assume_charset=utf-8 -dump -width \$b_cols -force_html -stdin \
+	   -nonumbers -hiddenlinks=ignore -nolist"
 fi
 
 # Valid characters for for #hashes, @users, !groups
