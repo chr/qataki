@@ -880,6 +880,7 @@ case ${param[0]} in
 		exit 0 ;;
 	*$key_user)
 		nick=${param[1]}
+		curl_extra_opts='-G'
 
 		if [[ $auth = oauth ]] ; then
 			fn_oauth_params 'screen_name' "$nick" 'count' "$opt_max_stats"
