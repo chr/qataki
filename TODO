@@ -1,10 +1,3 @@
-ATT:
-
-* I messaggi contengono entità HTML
-
-Random stuff to do
-==================
-
 (Those with an astesrisk have priority.)
 
 - Add $EDITOR option for replies. (*)
@@ -13,3 +6,7 @@ Random stuff to do
 - Better hashtags and users highlighting.
 - Block and Flag users/spammers.
 - Give some info of users (e.g., groups, total posts, ecc.)
+- Check why some messages have HTML entities.
+- Open links present in conversations.
+- Remove par(1) dependency.
+- Show your groups/subscriptions/subscribers.
