@@ -307,7 +307,7 @@ key_user=N key_search=S key_context=c key_group=g key_resend=R key_details=d
 key_dir_msg_send=M key_configure=k key_help=h key_Help=H key_prev=P
 key_alt_nick=n key_sn=s key_follow=f key_unfollow=F key_join=j key_unjoin=J
 key_delete=D key_like=a key_open=o key_comment=C key_block=b key_unblock=B
-key_number=e
+key_number=e key_comment_w=Q key_reply_w=Y
 
 for i in $(grep -o "^\(key\|opt\)_[^ 	]*" $conf_file) ; do
 	eval $i
@@ -623,7 +623,7 @@ fn_real_urls() {
 fn_editor_update() {
 	editor=${EDITOR:-vi}
 	tmp_status=${TMP:-/tmp}/qataki_$(id -u).$$
-	  > $tmp_status
+	echo "$1" > $tmp_status
 	eval $editor $opt_editor $tmp_status
 	msg=$(tr '\n' ' ' < $tmp_status)
 	rm $tmp_status
@@ -702,9 +702,10 @@ fn_parameters() {
 }
 
 # Options that need authentication
-[[ ${param[0]} = *[$key_update$key_update_w$key_reply$key_mentions$key_sn$key_resend\
-$key_dir_msg_send$key_delete$key_follow$key_unfollow$key_join$key_unjoin\
-$key_like$key_comment$key_block$key_unblock] ]] && fn_prepare_auth
+[[ ${param[0]} = *[$key_update$key_update_w$key_reply$key_mentions$key_sn\
+$key_resend$key_dir_msg_send$key_delete$key_follow$key_unfollow$key_join\
+$key_unjoin$key_like$key_comment$key_block$key_unblock$key_comment_w\
+$key_reply_w] ]] && fn_prepare_auth
 
 fn_auth_header() {
 	auth_header=$(OAuth_authorization_header 'Authorization' \
@@ -846,7 +847,7 @@ case ${param[0]} in
 
 		fn_download file $site/$api/mentions.xml \
 		  "since_id=$last_stat" "count=$opt_max_stats" && fn_last_status 2 ;;
-	*[$key_reply$key_comment])
+	*[$key_reply$key_reply_w$key_comment$key_comment_w])
 		msg=$(fn_parameters 2 ${#param[@]})
 
 		if [[ -z ${param[1]} || ${param[1]} = *[!0-9]* ]] ; then
@@ -857,13 +858,21 @@ case ${param[0]} in
 		reply_to=$(fn_status_info '/<status>/' '/<user>/' '<id>')
 		user_name=$(fn_status_info '/<user>/' '/<status>/' '<screen_name>')
 
-		if [[ ${param[0]} = $key_comment ]] ; then
+		if [[ ${param[0]} = [$key_comment$key_comment_w] ]] ; then
 			comment=$(fn_status_info '/<status>/' '/<user>/' '<text>' | \
 			  sed 's/!\([^[:space:]][^[:space:]]*\)/#\1/g')
 			[[ $site = *twitter* ]] && resend=RT || resend=RD
-			reply_status="$msg $resend @$user_name $comment"
+			if [[ ${param[0]} = $key_comment_w ]] ; then
+				msg= ; fn_editor_update "$resend @$user_name $comment"
+				reply_status=$msg
+			else
+				reply_status="$msg $resend @$user_name $comment"
+			fi
+		elif [[ ${param[0]} = $key_reply_w ]] ; then
+			fn_editor_update "@$user_name"
+			reply_status="$msg"
 		else
-			[[ -z $msg ]] && { echo 'Message?' ; exit 1 ; }
+			[[ -z $msg ]] && echo "Message?" && exit 1
 			reply_status="@$user_name $msg"
 		fi
 
