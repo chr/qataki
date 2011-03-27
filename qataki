@@ -80,8 +80,10 @@ $key_mentions         [+]                Show notices where you are mentioned (@
                              If you use the optional "+" argument, all statuses
                              will be displayed. Otherwise only new statuses.
                              Default: key_mentions=m
-$key_reply         <NUMBER> "message" Reply to message number <NUMBER>.
+$key_reply         <NUMBER> "message" Reply to message number <NUMBER> with "message".
                              Default: key_reply=r
+$key_reply_w         <NUMBER>           Reply to message number <NUMBER> by using \$EDITOR.
+                             Default: key_reply_w=Y
 $key_context         <NUMBER>           Show conversation relative to notice <NUMBER>.
                              Default: key_context=c
 $key_alt_nick:<NICK>  <OPTION>           Use an alternate nick. This option can be
@@ -109,6 +111,8 @@ $key_comment         <NUMBER> [message] Retweet/redent message number <NUMBER>. 
                                 only for Identi.ca/StatusNet sites).
                              Technically, this option generates a reply.
                              Default: key_comment=C
+$key_comment_w         <NUMBER>          As above, but use \$EDITOR to compose a comment.
+                              Default: key_comment_w=Q
 $key_dir_msg_send         <USER> "message"   Send a direct msg (with text "message") to <USER>.
                              Default: key_dir_msg_send=M
 $key_follow         <USER>|<NUMBER>    Follow someone (AKA subscribe).
@@ -119,13 +123,12 @@ $key_join         <GROUP>            Join <GROUP>.
                              Default: key_join=j
 $key_unjoin         <GROUP>            Unjoin <GROUP>.
                              Default: key_unjoin=J
-a         <NUMBER>           Add notice <NUMBER> to favorites list.
+$key_like         <NUMBER>           Add notice <NUMBER> to favorites list.
                              Default: key_like=a
-o         <NUMBER>           Open a link present in notice <NUMBER> in your
+$key_open         <NUMBER>           Open a link present in notice <NUMBER> in your
                              \$BROWSER. If more than 1 link is present, a menu
                              to choose from will be displayed.
                              Default: key_open=o
-
 
 NOTES:
 
