@@ -598,7 +598,7 @@ fn_url() {
 # Extract title from URL ($1).
 # Original idea by @ksaver http://identi.ca/ksaver
 fn_url_title() {
-	curl -s "$1" | awk 'BEGIN { ORS=" " }
+	curl -ks "$1" | awk 'BEGIN { ORS=" " }
 	  /<[Tt][Ii][Tt][Ll][Ee]>/,/<\/[Tt][Ii][Tt][Ll][Ee]>/ { print $0 }' | \
 	sed 's@.*<[Tt][Ii][Tt][Ll][Ee]>\(.*\)</[Tt][Ii][Tt][Ll][Ee]>.*$@\1@'
 }
