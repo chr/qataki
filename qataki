@@ -344,6 +344,7 @@ if [[ $1 = t ]] ; then
 	shift
 fi
 
+
 if [[ $1 = $key_sn:* ]] ; then
 	# Identi.ca is not present inside [[ ]] as it's the default value
 	# and will be overwritten anyway if "s:..." is specified
@@ -772,7 +773,7 @@ if [[ $site = *twitter* ]] ; then
 		source qataki.utils
 	else
 		cat <<-EOB
-		Please copy the 'OAuth' file in $conf_dir/OAuth
+		Please copy the 'qataki.utils' file in $conf_dir/qataki.utils
 		You can find a copy of it at http://github.com/chr/qataki/
 EOB
 		exit 10
