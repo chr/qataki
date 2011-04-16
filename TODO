@@ -1,8 +1,6 @@
 (Those with an astesrisk have priority.)
 
-- Add $EDITOR option for replies. (*)
 - {context} should recognise first message with replies. (*)
-- {context} is broken if message is a reply to a SN site. (*)
 - Better hashtags and users highlighting.
 - Block and Flag users/spammers.
 - Give some info of users (e.g., groups, total posts, ecc.)
@@ -10,3 +8,9 @@
 - Open links present in conversations.
 - Remove par(1) dependency.
 - Show your groups/subscriptions/subscribers.
+
+
+ISSUES
+
+- {context} is broken if message is a reply to a SN site. (*)
+- q u 'http://example.org/' is broken with OAuth
