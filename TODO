@@ -8,6 +8,8 @@
 - Open links present in conversations.
 - Remove par(1) dependency.
 - Show your groups/subscriptions/subscribers.
+- Avoid bashisms.
+- Improve options parsing.
 
 
 ISSUES
