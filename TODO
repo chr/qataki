@@ -10,6 +10,7 @@
 - Show your groups/subscriptions/subscribers.
 - Avoid bashisms.
 - Improve options parsing.
+- Add short links for long URLS (> cols) in 'd' option.
 
 
 ISSUES
