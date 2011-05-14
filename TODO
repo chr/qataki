@@ -17,3 +17,4 @@ ISSUES
 
 - {context} is broken if message is a reply to a SN site. (*)
 - q u 'http://example.org/' is broken with OAuth
+- Sometimes '0 minutes' ago is displayed.
