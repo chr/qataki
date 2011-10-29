@@ -401,13 +401,17 @@ fi
 chars='a-zA-Z0-9_-'
 
 # Embed colour sequences
-col_emph='[1;33;40m'
-col_foll='[0;30;43m'
-col_norm='[0m'
-col_link='[1;36;40m'
-col_at='[1;35;40m'
-col_hash='[1;32;40m'
-col_bang='[1;31;40m'
+if [[ -f $conf_dir/${opt_theme#opt_theme=} ]] ; then
+	source $conf_dir/${opt_theme#opt_theme=}
+else
+	col_normal='[0m'
+	col_nick='[1;33;40m'
+	col_follow='[0;30;43m'
+	col_reply='[1;35;40m'
+	col_link='[1;36;40m'
+	col_hash='[1;32;40m'
+	col_group='[1;31;40m'
+fi
 
 curl="eval /usr/bin/env HOME=$conf_dir curl"
 
@@ -529,12 +533,12 @@ fn_format() {
 	else
 		eval $render
 	fi | \
-	sed "s/^\([^1-9]*[1-9][0-9]*\.[^\*]*\)\*###\([^ ][^ ]*\)\*:/\1$col_foll\2$col_norm:/;\
-	  s/^\([^1-9]*[1-9][0-9]*\.[^\*]*\)\*\([^ ][^ ]*\)\*:/\1$col_emph\2$col_norm:/;\
-	  s@\([fgh][a-zA-Z]*://[^ ][^ ]*[a-zA-Z0-9/]\)@$col_link\1$col_norm@g;\
-	  s/\(@[$chars][$chars]*\)/$col_at\1$col_norm/g;\
-	  s/\(#[$chars][$chars]*\)/$col_hash\1$col_norm/g;\
-	  s/\(![$chars][$chars]*\)/$col_bang\1$col_norm/g;\
+	sed "s/^\([^1-9]*[1-9][0-9]*\.[^\*]*\)\*###\([^ ][^ ]*\)\*:/\1$col_follow\2$col_normal:/;\
+	  s/^\([^1-9]*[1-9][0-9]*\.[^\*]*\)\*\([^ ][^ ]*\)\*:/\1$col_nick\2$col_normal:/;\
+	  s@\([fgh][a-zA-Z]*://[^ ][^ ]*[a-zA-Z0-9/]\)@$col_link\1$col_normal@g;\
+	  s/\(@[$chars][$chars]*\)/$col_reply\1$col_normal/g;\
+	  s/\(#[$chars][$chars]*\)/$col_hash\1$col_normal/g;\
+	  s/\(![$chars][$chars]*\)/$col_group\1$col_normal/g;\
 	  s/\({context}\)$/[1m\1[0m/"
 }
 
@@ -922,6 +926,7 @@ case ${param[0]} in
 		  "rpp=$opt_max_stats" "q=$string" ;;
 	*$key_context)
 		[[ "$site" == *twitter* ]] && usage no_impl
+
 		# Retrive conversation URL from status id
 		b_cols=$cols
 		status_num=${param[1]} tag_cont_re='.'
@@ -930,11 +935,19 @@ case ${param[0]} in
 		  sed -n "/>in context</ { s/[^\"]*\"\([^#]*\).*/\1/ p
 		    }")
 		# Format conversation
-		fn_conversation "$conversation_url" | fn_format conversation | \
-		  sed "/^$/d;s/ \{10\}/        $col_emph|$col_norm/g" | \
-		  sed "s/ \{5\}/  $col_hash|$col_norm/g" | \
-		  less $opt_pager_opts
-		  exit 0 ;;
+		#fn_conversation "$conversation_url" | fn_format conversation | \
+		#  sed "/^$/d;s/ \{10\}/        $col_nick|$col_normal/g" | \
+		#  sed "s/ \{5\}/  $col_hash|$col_normal/g" | \
+		#  less $opt_pager_opts
+		#  exit 0 ;;
+
+
+		# NEW
+		context_id=$(fn_status_info '/<status>/' '/<\/status>/' '<statusnet:conversation_id>')
+		api=statusnet/conversation
+		fn_download file $site/$api/$context_id.xml ;;
+		# /NEW
+
 	*[$key_group$key_join$key_unjoin])
 		[[ "$site" == *twitter* ]] && usage no_impl
 		group=${param[1]}
