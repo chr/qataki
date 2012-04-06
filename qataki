@@ -208,7 +208,7 @@ identica=http://identi.ca/api
 umask 0077
 
 fn_configuration() {
-	echo -n "Create/modify account? [Y/n]"
+	echo -n "Create/modify account? [Y/n]: "
 	read -n 1 ans && echo
 	[[ $ans = [nN]* ]] && echo 'Nothing done!' && exit 1
 
@@ -223,7 +223,7 @@ fn_configuration() {
 					v_site=twitter.com v_site_name=twitter
 				fi ;;
 			3)	while [[ -z $v_site ]] ; do
-					echo -n "StatusNet site (e.g., http://micro.example.com):"
+					echo -n "StatusNet site (e.g., http://micro.example.com): "
 					read v_site
 				done
 				while [[ -z $v_site_name ]] ; do
@@ -253,7 +253,7 @@ fn_configuration() {
 		read -r v_pass
 	done
 
-	echo -n "Is $v_nick your default $v_site account? [Y/n]"
+	echo -n "Is $v_nick your default $v_site account? [Y/n]: "
 	read -n 1 ans && echo
 	if [[ $ans != [nN] ]] ; then
 		if grep default_user_$v_site_name 1>/dev/null $conf_file ; then
