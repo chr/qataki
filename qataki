@@ -541,6 +541,7 @@ fn_format() {
 	  s/\(@[$chars][$chars]*\)/$col_reply\1$col_normal/g;\
 	  s/\(#[$chars][$chars]*\)/$col_hash\1$col_normal/g;\
 	  s/\(![$chars][$chars]*\)/$col_group\1$col_normal/g;\
+          s/&amp;/\&/g;\
 	  s/\({context}\)$/[1m\1[0m/"
 }
 
