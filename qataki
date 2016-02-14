@@ -53,9 +53,9 @@ EOB
 
 $(basename $0) [i|t|s:<SITE>] [n:<NICK>] [<OPTION> [<ARGUMENT>]]
 
-The first (optional) flag can be: i (identi.ca) OR t (twitter)OR
+The first (optional) flag can be: i (gs.sdf.org) OR t (twitter) OR
 s:<SITE> (see below). If none of these three flags are given,
-then Identi.ca will be used. It is possible to use only 1 OPTION
+then gs.sdf.org will be used. It is possible to use only 1 OPTION
 and, eventually, its ARGUMENT. If no option is passed, messages
 from people you follow will be retrieved by default.
 Options have a default value, but it is possible to modify defaults
@@ -108,7 +108,7 @@ $key_comment         <NUMBER> [message] Retweet/redent message number <NUMBER>. 
                              differs from the previous because you can:
                              1) Optionally add a message before resent message;
                              2) Transforms groups tags in hashtags (available
-                                only for Identi.ca/StatusNet sites).
+                                only for gs.sdf.org/StatusNet sites).
                              Technically, this option generates a reply.
                              Default: key_comment=C
 $key_comment_w         <NUMBER>          As above, but use \$EDITOR to compose a comment.
@@ -149,7 +149,7 @@ NOTES:
           syntaxes are shown here: http://pastebin.com/api.php
 <NUMBER>  is the tweet/dent number displayed on the left when you run
           "$(basename $0) [i|t|s<SITE>] [n:<NICK>] [N <USER>]".
-<GROUP>   is the name of an Identi.ca/StatusNet group.
+<GROUP>   is the name of an gs.sdf.org/StatusNet group.
 <NICK>    is an alternate nickname. You have to pass *alternate* nicknames
           on the command line as n:<NICK>. On the contrary, you don't have
           to specify your *default* nickname. For this, your default nick
@@ -158,7 +158,7 @@ NOTES:
 
           default_user_SERVICE=YOUR_DEFAULT_NICK
 
-          where "SERVICE" can be identica, twitter or <SITE> (see below)
+          where "SERVICE" can be gs.sdf.org, twitter or <SITE> (see below)
           and YOUR_DEFAULT_NICK is... your default nickname on SERVICE.
 <USER>    is a user's nickname (AKA screen_name; no spaces).
 <SITE>    is an alias for a StatusNet compatible site. This alias is
@@ -184,7 +184,7 @@ to $conf_file. If you ever need to do it by hand, its syntax is:
 
 machine SERVICE login YOU password PASS
 
-where SERVICE can be identi.ca OR twitter.com (and api.twitter.com) OR
+where SERVICE can be gs.sdf.org OR twitter.com (and api.twitter.com) OR
 a StatusNet compatible microblogging site (without "http://").
 
 EOH
@@ -203,7 +203,7 @@ cache_dir=$conf_dir/cache
 tmp_file=$cache_dir/tmp
 kill_file=$conf_dir/killfile
 twitter=http://api.twitter.com/1
-identica=http://identi.ca/api
+gs=http://gs.sdf.org/api
 
 umask 0077
 
@@ -214,11 +214,11 @@ fn_configuration() {
 
 	echo >> $conf_file
 
-	select i in Identi.ca Twitter StatusNet ; do
+	select i in gs.sdf.org Twitter StatusNet ; do
 		[[ $REPLY != [123] ]] && continue
 		case $REPLY in
 			1|2) if [[ $REPLY -eq 1 ]] ; then
-				v_site=identi.ca v_site_name=identica
+				v_site=gs.sdf.org v_site_name=gs.sdf.org
 				else
 					v_site=twitter.com v_site_name=twitter
 				fi ;;
@@ -316,12 +316,12 @@ for i in $(grep -o "^\(key\|opt\)_[^ 	]*" $conf_file) ; do
 	eval $i
 done
 
-opt_pager_opts=${opt_pager_opts:-'-REX'} opt_max_chars=${opt_max_chars:-140}
+opt_pager_opts=${opt_pager_opts:-'-REX'} opt_max_chars=${opt_max_chars:-1000}
 opt_max_stats=${opt_max_stats:-30} opt_order=${opt_order:-default}
 opt_from=${opt_from:-Qataki} opt_show_date=${opt_show_date:-0}
 opt_kill=${opt_kill:-0}
 
-site=$identica api=statuses last_file=$cache_dir/last.dent
+site=$gs api=statuses last_file=$cache_dir/last.dent
 [[ $1 = i ]] && shift
 
 if [[ $1 = $key_alt_nick:* ]] ; then
@@ -329,7 +329,7 @@ if [[ $1 = $key_alt_nick:* ]] ; then
 	last_file=$last_file.$my_nick
 	shift
 else
-	my_nick=$(sed -n "s/^default_user_identica=//p" $conf_file)
+	my_nick=$(sed -n "s/^default_user_gs=//p" $conf_file)
 fi
 
 if [[ $1 = t ]] ; then
@@ -346,7 +346,7 @@ fi
 
 
 if [[ $1 = $key_sn:* ]] ; then
-	# Identi.ca is not present inside [[ ]] as it's the default value
+	# gs.sdf.org is not present inside [[ ]] as it's the default value
 	# and will be overwritten anyway if "s:..." is specified
 	[[ $site = *twitter* ]] && usage no_both
 	site_alias=$1 site_alias=${site_alias/s:}
@@ -885,7 +885,7 @@ case ${param[0]} in
 			msg="$link_title $msg"
 		fi
 
-		# XXX: True only for Identi.ca and Twitter
+		# XXX: True only for gs.sdf.org
 		[[ ${#msg} -gt $opt_max_chars ]] && msg=$(echo "$msg" | fn_url short)
 		[[ ${#msg} -gt $opt_max_chars ]] && echo "Message too long." && exit 1
 
@@ -1072,7 +1072,7 @@ case ${param[0]} in
 		exit 0 ;;
 	*$key_info_msg)
 		# XXX: What was next line for???
-		#grep '<verified>' $tmp_file 1>/dev/null || site=$identica # verif -> tw
+		#grep '<verified>' $tmp_file 1>/dev/null || site=$gs # verif -> tw
 		fn_info_msg ${param[1]} && exit 0 ;;
 	*$key_configure)
 		fn_configuration ;;

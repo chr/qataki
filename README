@@ -1,21 +1,22 @@
-THIS PROJECT IS ABANDONED.
-
 QATAKI
 ======
 
-Qataki is a CLI Identi.ca/StatusNet/Twitter client.
+(Please note: Twitter used to work some time ago. Currently
+it is not supported.)
+
+Qataki is a CLI gs.sdf.org/StatusNet/Twitter client.
 
 It's a shell script that you can use to read/post notices
 from the command line in a simple manner.  Besides that,
 with qataki you can: reply to posts; retweet notices;
 search for notices.  As you can see there are not fancy
 features.  However, if you feel that something useful
-lacks, contact me (@qataki, identica) or play yourself
+lacks, contact me (@chr, gs.sdf.org) or play yourself
 with the code!
 
 Qataki's website: http://chr.tx0.org/qataki
 
-By default Identi.ca and Twitter support is enabled. You
+By default gs.sdf.org and Twitter support is enabled. You
 can use a StatusNet site by creating an alias in a
 configuration file. More info here:
 http://chr.tx0.org/qataki/documentation#StatusNet
