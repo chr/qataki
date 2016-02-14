@@ -1,3 +1,9 @@
+0.06	2016-02-14
+	* Dropped support for Identi.ca
+	* gs.sdf.org is now default site
+
+0.05
+
 0.04	2010-05-09
 	* Added new options: follow/unfollow people, join/unjoin groups,
 	  delete notices, open links in a text based web browser.
