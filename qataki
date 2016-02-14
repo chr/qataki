@@ -870,7 +870,8 @@ case ${param[0]} in
 		[[ ${param[1]} = '+' || ! -n $last_stat ]] && last_stat=1
 
 		data="$site/$api/public_timeline.xml?count=$opt_max_stats"
-		fn_download file $site/$api/public_timeline.xml && fn_last_status 3 ;;
+		fn_download file $site/$api/public_timeline.xml \
+		  "since_id=$last_stat" "count=$opt_max_stats" && fn_last_status 3 ;;
 	*[$key_update$key_update_w])
 		if [[ ${param[0]} = $key_update ]] ; then
 			msg=$(fn_parameters 1 ${#param[@]})
