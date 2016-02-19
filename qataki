@@ -203,7 +203,7 @@ cache_dir=$conf_dir/cache
 tmp_file=$cache_dir/tmp
 kill_file=$conf_dir/killfile
 twitter=http://api.twitter.com/1
-gs=http://gs.sdf.org/api
+gs=https://gs.sdf.org/api
 
 umask 0077
 
