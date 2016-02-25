@@ -291,7 +291,7 @@ if [[ ! -f $conf_file ]] ; then
 	cat <<-EOC > $conf_file
 		# These are options you can modify:
 		opt_pager_opts='-REX' # Options for pager (less)
-		opt_max_chars=140     # Max characters on update messages
+		opt_max_chars=999     # Max characters on update messages
 		opt_max_stats=30      # Max number of statuses to display
 		opt_editor=           # Options for your $EDITOR
 		opt_order=default     # 'default' -> as website; 'date' -> chronological
